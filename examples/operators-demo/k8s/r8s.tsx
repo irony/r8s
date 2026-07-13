@@ -1,8 +1,8 @@
-import { Postgres } from '@reactnetes/recipes';
-import { LetsEncryptIssuer, ManagedCertificate } from '@reactnetes/recipes-cert-manager';
-import { VaultConnectionConfig, VaultKubernetesAuth, VaultKVSecret } from '@reactnetes/recipes-vault';
-import { KeycloakInstance, KeycloakRealm } from '@reactnetes/recipes-keycloak';
-import { ExternalDNSRecord } from '@reactnetes/recipes-external-dns';
+import { Postgres } from '@r8s/recipes';
+import { LetsEncryptIssuer, ManagedCertificate } from '@r8s/recipes-cert-manager';
+import { VaultConnectionConfig, VaultKubernetesAuth, VaultKVSecret } from '@r8s/recipes-vault';
+import { KeycloakInstance, KeycloakRealm } from '@r8s/recipes-keycloak';
+import { ExternalDNSRecord } from '@r8s/recipes-external-dns';
 
 export default function PlatformInfrastructure() {
   return (

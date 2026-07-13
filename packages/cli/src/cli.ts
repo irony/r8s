@@ -36,16 +36,16 @@ function parseArgs(args: string[]): CliOptions {
 
 function showHelp(): void {
   console.log(`
-ReactNetes CLI - Render TSX components to Kubernetes YAML
+r8s CLI - Render TSX components to Kubernetes YAML
 
-Usage: reactnetes [command] [options]
+Usage: r8s [command] [options]
 
 Commands:
-  render    Render k8s/ReactNetes.tsx to YAML (default)
-  init      Scaffold a new ReactNetes project
+  render    Render k8s/r8s.tsx to YAML (default)
+  init      Scaffold a new r8s project
 
 Options:
-  --entry, -e <path>     Entry file path (default: k8s/ReactNetes.tsx)
+  --entry, -e <path>     Entry file path (default: k8s/r8s.tsx)
   --out, -o <path>       Output file path (default: stdout)
   --template, -t <name>  Template for init (basic, fullstack) [default: basic]
   --operators <list>     Comma-separated list of operators to include
@@ -53,13 +53,13 @@ Options:
   --help, -h             Show this help message
 
 Examples:
-  reactnetes render
-  reactnetes render --entry ./infra/manifest.tsx
-  reactnetes render --out ./output/k8s.yaml
-  reactnetes init
-  reactnetes init my-project
-  reactnetes init my-project --template fullstack
-  reactnetes init my-project --operators cert-manager,vault
+  r8s render
+  r8s render --entry ./infra/manifest.tsx
+  r8s render --out ./output/k8s.yaml
+  r8s init
+  r8s init my-project
+  r8s init my-project --template fullstack
+  r8s init my-project --operators cert-manager,vault
 `);
 }
 
@@ -73,10 +73,10 @@ async function findEntryFile(entryPath?: string): Promise<string> {
   }
 
   const defaults = [
-    'k8s/ReactNetes.tsx',
-    'k8s/reactnetes.tsx',
+    'k8s/r8s.tsx',
+    'k8s/r8s.tsx',
     'k8s/index.tsx',
-    'infra/ReactNetes.tsx',
+    'infra/r8s.tsx',
   ];
 
   for (const defaultPath of defaults) {
@@ -113,21 +113,21 @@ async function initProject(projectName: string, template: string, operators?: st
     }
   }
 
-  console.log(`Creating ReactNetes project: ${projectName}`);
+  console.log(`Creating r8s project: ${projectName}`);
 
   // Create directory structure
   mkdirSync(join(projectDir, 'k8s'), { recursive: true });
 
   // Create package.json
   const dependencies: Record<string, string> = {
-    '@reactnetes/core': '^0.1.0',
-    '@reactnetes/recipes': '^0.1.0',
+    '@r8s/core': '^0.1.0',
+    '@r8s/recipes': '^0.1.0',
   };
 
   // Add operator packages if requested
   if (operators) {
     for (const op of operators) {
-      dependencies[`@reactnetes/recipes-${op}`] = '^0.1.0';
+      dependencies[`@r8s/recipes-${op}`] = '^0.1.0';
     }
   }
 
@@ -136,11 +136,11 @@ async function initProject(projectName: string, template: string, operators?: st
     version: '0.1.0',
     private: true,
     scripts: {
-      'render-k8s': 'reactnetes render',
+      'render-k8s': 'r8s render',
     },
     dependencies,
     devDependencies: {
-      '@reactnetes/cli': '^0.1.0',
+      '@r8s/cli': '^0.1.0',
       typescript: '^5.3.0',
     },
   };
@@ -158,7 +158,7 @@ async function initProject(projectName: string, template: string, operators?: st
       module: 'NodeNext',
       moduleResolution: 'NodeNext',
       jsx: 'react-jsx',
-      jsxImportSource: '@reactnetes/core',
+      jsxImportSource: '@r8s/core',
       strict: true,
       esModuleInterop: true,
       skipLibCheck: true,
@@ -173,11 +173,11 @@ async function initProject(projectName: string, template: string, operators?: st
     'utf-8'
   );
 
-  // Create k8s/ReactNetes.tsx based on template
+  // Create k8s/r8s.tsx based on template
   let reactNetesContent: string;
 
   if (template === 'fullstack') {
-    reactNetesContent = `import { Postgres, CustomIngress } from '@reactnetes/recipes';
+    reactNetesContent = `import { Postgres, CustomIngress } from '@r8s/recipes';
 
 export default function App() {
   return (
@@ -280,7 +280,7 @@ export default function App() {
 `;
   } else {
     // Basic template
-    reactNetesContent = `import { Postgres, CustomIngress } from '@reactnetes/recipes';
+    reactNetesContent = `import { Postgres, CustomIngress } from '@r8s/recipes';
 
 export default function App() {
   return (
@@ -349,7 +349,7 @@ export default function App() {
   }
 
   writeFileSync(
-    join(projectDir, 'k8s', 'ReactNetes.tsx'),
+    join(projectDir, 'k8s', 'r8s.tsx'),
     reactNetesContent,
     'utf-8'
   );
@@ -406,7 +406,7 @@ jobs:
         run: npm ci
 
       - name: Render Kubernetes manifests
-        run: npx reactnetes render --out k8s/manifest.yaml
+        run: npx r8s render --out k8s/manifest.yaml
 
       - name: Check for changes
         id: git-check
@@ -432,7 +432,7 @@ jobs:
   // Create README.md
   const readme = `# ${projectName}
 
-Generated with ReactNetes.
+Generated with r8s.
 
 ## Getting Started
 
@@ -444,8 +444,8 @@ npm install
 npm run render-k8s
 
 # Or use the CLI directly
-npx reactnetes render
-npx reactnetes render --out k8s/manifest.yaml
+npx r8s render
+npx r8s render --out k8s/manifest.yaml
 \`\`\`
 
 ## Project Structure
@@ -456,7 +456,7 @@ npx reactnetes render --out k8s/manifest.yaml
 │   └── workflows/
 │       └── render.yaml   # Auto-render on push
 ├── k8s/
-│   ├── ReactNetes.tsx    # Your Kubernetes components
+│   ├── r8s.tsx    # Your Kubernetes components
 │   └── manifest.yaml       # Generated YAML (auto-committed)
 ├── package.json
 └── tsconfig.json
@@ -464,7 +464,7 @@ npx reactnetes render --out k8s/manifest.yaml
 
 ## Editing Manifests
 
-Open \`k8s/ReactNetes.tsx\` and edit your components. Run \`npm run render-k8s\` to generate YAML.
+Open \`k8s/r8s.tsx\` and edit your components. Run \`npm run render-k8s\` to generate YAML.
 
 ## GitHub Actions
 
@@ -472,8 +472,8 @@ This project includes a GitHub Actions workflow that automatically renders your 
 
 ## Learn More
 
-- [ReactNetes Documentation](https://github.com/yourusername/reactnetes)
-- [Recipes](https://github.com/yourusername/reactnetes/tree/main/packages/recipes)
+- [r8s Documentation](https://github.com/yourusername/r8s)
+- [Recipes](https://github.com/yourusername/r8s/tree/main/packages/recipes)
 `;
 
   writeFileSync(
@@ -501,7 +501,7 @@ async function main(): Promise<void> {
   const command = args[0] || 'render';
 
   if (command === 'init') {
-    const projectName = args[1] || 'reactnetes-app';
+    const projectName = args[1] || 'r8s-app';
     const template = options.template || 'basic';
     const operators = options.operators?.split(',').map(op => op.trim()).filter(Boolean);
 

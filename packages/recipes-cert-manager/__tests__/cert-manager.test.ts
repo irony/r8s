@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@reactnetes/core';
-import { jsx } from '@reactnetes/core';
+import { render } from '@r8s/core';
+import { jsx } from '@r8s/core';
 import { LetsEncryptIssuer, ManagedCertificate } from '../src/index';
 
 describe('LetsEncryptIssuer', () => {

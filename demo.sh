@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# ReactNetes Terminal Demo
-# This script demonstrates the ReactNetes workflow
+# r8s Terminal Demo
+# This script demonstrates the r8s workflow
 
 clear
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
-echo "  ReactNetes Demo: Kubernetes YAML from TSX Components"
+echo "  r8s Demo: Kubernetes YAML from TSX Components"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 
@@ -15,7 +15,7 @@ sleep 1
 
 echo "📦 Step 1: Create a new project"
 echo ""
-echo "$ npx reactnetes init my-app"
+echo "$ npx r8s init my-app"
 echo ""
 
 node packages/cli/dist/cli.js init my-app 2>&1
@@ -37,9 +37,9 @@ echo ""
 
 sleep 1
 
-echo "📝 k8s/ReactNetes.tsx:"
+echo "📝 k8s/r8s.tsx:"
 echo ""
-cat my-app/k8s/ReactNetes.tsx
+cat my-app/k8s/r8s.tsx
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
@@ -87,7 +87,7 @@ sleep 1
 echo "🚀 Step 3: GitOps Integration"
 echo ""
 echo "Push to GitHub and the workflow will:"
-echo "   1. Render k8s/ReactNetes.tsx → k8s/manifest.yaml"
+echo "   1. Render k8s/r8s.tsx → k8s/manifest.yaml"
 echo "   2. Commit the rendered YAML"
 echo "   3. FluxCD/ArgoCD applies it to your cluster"
 echo ""
@@ -98,7 +98,7 @@ echo "════════════════════════�
 echo ""
 echo "Done! Try it yourself:"
 echo ""
-echo "  npx reactnetes init my-project"
+echo "  npx r8s init my-project"
 echo "  cd my-project"
 echo "  npm install"
 echo "  npm run render-k8s"

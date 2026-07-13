@@ -1,5 +1,5 @@
-import { jsx } from '@reactnetes/core';
-import { Ingress } from '@reactnetes/k8s-types';
+import { jsx } from '@r8s/core';
+import { Ingress } from '@r8s/k8s-types';
 
 export interface CustomIngressProps {
   name: string;
@@ -8,13 +8,14 @@ export interface CustomIngressProps {
   serviceName: string;
   servicePort?: number;
   tlsSecretName?: string;
+  annotations?: Record<string, string>;
 }
 
 /**
  * Simple ingress with automatic TLS via cert-manager.
  * 
  * @example
- * <Ingress 
+ * <CustomIngress 
  *   name="app" 
  *   host="app.example.com" 
  *   serviceName="frontend" 
@@ -28,7 +29,16 @@ export function CustomIngress(props: CustomIngressProps) {
     serviceName,
     servicePort = 80,
     tlsSecretName,
+    annotations = {},
   } = props;
+
+  const defaultAnnotations: Record<string, string> = {
+    'nginx.ingress.kubernetes.io/rewrite-target': '/',
+    ...(tlsSecretName && {
+      'cert-manager.io/cluster-issuer': 'letsencrypt-prod',
+    }),
+    ...annotations,
+  };
 
   const ingress: Ingress = {
     apiVersion: 'networking.k8s.io/v1',
@@ -36,12 +46,7 @@ export function CustomIngress(props: CustomIngressProps) {
     metadata: {
       name,
       namespace,
-      annotations: {
-        'nginx.ingress.kubernetes.io/rewrite-target': '/',
-        ...(tlsSecretName && {
-          'cert-manager.io/cluster-issuer': 'letsencrypt-prod',
-        }),
-      },
+      annotations: defaultAnnotations,
     },
     spec: {
       ingressClassName: 'nginx',

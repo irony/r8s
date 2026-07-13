@@ -1,11 +1,11 @@
-import { ReactNetesElement, Fragment, ReactNetesProps } from './jsx-runtime';
-import { KubernetesResource } from '@reactnetes/k8s-types';
+import { r8sElement, Fragment, r8sProps } from './jsx-runtime';
+import { KubernetesResource } from '@r8s/k8s-types';
 
 export interface RenderResult {
   resources: KubernetesResource[];
 }
 
-function isReactNetesElement(value: unknown): value is ReactNetesElement {
+function isr8sElement(value: unknown): value is r8sElement {
   return (
     value !== null &&
     typeof value === 'object' &&
@@ -29,14 +29,14 @@ function flattenChildren(children: unknown): unknown[] {
 function renderChildren(children: unknown): KubernetesResource[] {
   const flattened = flattenChildren(children);
   return flattened.flatMap((child) => {
-    if (isReactNetesElement(child)) {
+    if (isr8sElement(child)) {
       return renderElement(child);
     }
     return [];
   });
 }
 
-function renderElement(element: ReactNetesElement): KubernetesResource[] {
+function renderElement(element: r8sElement): KubernetesResource[] {
   // Handle Fragment - just render children
   if (element.type === Fragment) {
     return renderChildren(element.props.children);
@@ -49,7 +49,7 @@ function renderElement(element: ReactNetesElement): KubernetesResource[] {
 
     const result = componentFn(props);
 
-    if (isReactNetesElement(result)) {
+    if (isr8sElement(result)) {
       return renderElement(result);
     }
 
@@ -78,7 +78,7 @@ function renderElement(element: ReactNetesElement): KubernetesResource[] {
   return [];
 }
 
-export function render(element: ReactNetesElement): RenderResult {
+export function render(element: r8sElement): RenderResult {
   const resources = renderElement(element);
   return { resources };
 }

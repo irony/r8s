@@ -21,7 +21,7 @@ describe('CLI Renderer', () => {
 
   it('should render a simple JS file to YAML', async () => {
     const jsContent = `
-const { jsx, Fragment } = require('@reactnetes/core');
+const { jsx, Fragment } = require('@r8s/core');
 
 module.exports = function App() {
   return jsx(Fragment, {
@@ -45,7 +45,7 @@ module.exports = function App() {
 };
 `;
 
-    const entryFile = join(testDir, 'ReactNetes-simple.js');
+    const entryFile = join(testDir, 'r8s-simple.js');
     writeFileSync(entryFile, jsContent, 'utf-8');
 
     const yaml = await renderToYaml(entryFile);
@@ -58,7 +58,7 @@ module.exports = function App() {
 
   it('should render multiple resources', async () => {
     const jsContent = `
-const { jsx, Fragment } = require('@reactnetes/core');
+const { jsx, Fragment } = require('@r8s/core');
 
 module.exports = function App() {
   return jsx(Fragment, {
@@ -91,7 +91,7 @@ module.exports = function App() {
 };
 `;
 
-    const entryFile = join(testDir, 'ReactNetes-multi.js');
+    const entryFile = join(testDir, 'r8s-multi.js');
     writeFileSync(entryFile, jsContent, 'utf-8');
 
     const yaml = await renderToYaml(entryFile);

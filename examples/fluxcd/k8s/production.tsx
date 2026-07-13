@@ -1,5 +1,5 @@
-import { Postgres, CustomIngress } from '@reactnetes/recipes';
-import { LetsEncryptIssuer, ManagedCertificate } from '@reactnetes/recipes-cert-manager';
+import { Postgres, CustomIngress } from '@r8s/recipes';
+import { LetsEncryptIssuer, ManagedCertificate } from '@r8s/recipes-cert-manager';
 
 export default function ProductionApp() {
   return (

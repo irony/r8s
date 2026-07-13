@@ -1,6 +1,6 @@
-# ReactNetes + FluxCD Example
+# r8s + FluxCD Example
 
-Complete GitOps workflow with ReactNetes and FluxCD.
+Complete GitOps workflow with r8s and FluxCD.
 
 ## Files
 
@@ -39,15 +39,15 @@ flux get sources git
 
 ```bash
 # Render staging
-npx reactnetes render --entry k8s/staging.tsx --out k8s/staging.yaml
+npx r8s render --entry k8s/staging.tsx --out k8s/staging.yaml
 
 # Render production
-npx reactnetes render --entry k8s/production.tsx --out k8s/production.yaml
+npx r8s render --entry k8s/production.tsx --out k8s/production.yaml
 ```
 
 ## GitHub Actions
 
-The `.github/workflows/render.yaml` (created by `reactnetes init`) automatically renders on push.
+The `.github/workflows/render.yaml` (created by `r8s init`) automatically renders on push.
 
 ## Multi-Environment Strategy
 

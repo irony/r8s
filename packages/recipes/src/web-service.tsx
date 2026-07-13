@@ -1,5 +1,5 @@
-import { jsx } from '@reactnetes/core';
-import { Deployment, Service } from '@reactnetes/k8s-types';
+import { jsx } from '@r8s/core';
+import { Deployment, Service } from '@r8s/k8s-types';
 
 export interface WebServiceProps {
   name: string;

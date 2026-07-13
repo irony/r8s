@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { jsx, Fragment } from '../src/jsx-runtime';
 import { render } from '../src/renderer';
-import { Deployment, Service, ConfigMap } from '@reactnetes/k8s-types';
+import { Deployment, Service, ConfigMap } from '@r8s/k8s-types';
 
 // Helper to create elements without JSX transform
 const createElement = jsx;

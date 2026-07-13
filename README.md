@@ -1,12 +1,12 @@
-# ReactNetes
+# r8s
 
 **Kubernetes manifests as TSX components.**
 
 Stop writing YAML. Start composing infrastructure.
 
 ```tsx
-// k8s/ReactNetes.tsx
-import { Postgres, CustomIngress } from '@reactnetes/recipes';
+// k8s/r8s.tsx
+import { Postgres, CustomIngress } from '@r8s/recipes';
 
 export default () => (
   <>
@@ -40,7 +40,7 @@ export default () => (
 ```
 
 ```bash
-$ npx reactnetes render
+$ npx r8s render
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -77,17 +77,17 @@ You have a microservice. It needs:
 
 **Option D: Pulumi/CDK8s** — Powerful, but heavy. New DSL to learn. Often overkill for "just give me some YAML."
 
-## The ReactNetes Way
+## The r8s Way
 
-ReactNetes brings **component composition** to Kubernetes — the same pattern that made React dominant for UIs:
+r8s brings **component composition** to Kubernetes — the same pattern that made React dominant for UIs:
 
-| Concept | UI (React) | Infrastructure (ReactNetes) |
+| Concept | UI (React) | Infrastructure (r8s) |
 |:---|:---|:---|
 | Component | `<Button />` | `<Postgres />` |
 | Composition | `<Header><Nav /></Header>` | `<App><Api /><Db /></App>` |
 | Props | `<Button color="red" />` | `<Postgres storage="20Gi" />` |
 | Fragment | `<><A /><B /></>` | `<><Deployment /><Service /></>` |
-| Reuse | `import Button from 'lib'` | `import Postgres from '@reactnetes/recipes'` |
+| Reuse | `import Button from 'lib'` | `import Postgres from '@r8s/recipes'` |
 
 ### Why This Matters
 
@@ -96,7 +96,7 @@ ReactNetes brings **component composition** to Kubernetes — the same pattern t
 Your 10 microservices all need the same Postgres setup? One component, imported everywhere:
 
 ```tsx
-import { Postgres } from '@reactnetes/recipes';
+import { Postgres } from '@r8s/recipes';
 
 // Same component, different props
 <Postgres name="user-db" database="users" />
@@ -143,22 +143,22 @@ Nested components render to a flat list of Kubernetes resources. No magic, no ru
 ### 1. Create a new project
 
 ```bash
-npx reactnetes init my-project
+npx r8s init my-project
 cd my-project
 npm install
 ```
 
 This scaffolds a complete project with:
-- `k8s/ReactNetes.tsx` — your Kubernetes components
+- `k8s/r8s.tsx` — your Kubernetes components
 - `tsconfig.json` — TypeScript config with JSX support
 - `.github/workflows/render.yaml` — auto-render on push
 
 ### 2. Edit your components
 
-Open `k8s/ReactNetes.tsx` and customize:
+Open `k8s/r8s.tsx` and customize:
 
 ```tsx
-import { Postgres, CustomIngress } from '@reactnetes/recipes';
+import { Postgres, CustomIngress } from '@r8s/recipes';
 
 export default function App() {
   return (
@@ -228,7 +228,7 @@ export default function App() {
 ```bash
 $ npm run render-k8s
 # or
-$ npx reactnetes render --out k8s/manifest.yaml
+$ npx r8s render --out k8s/manifest.yaml
 ```
 
 Output: 6 Kubernetes resources (StatefulSet, Service, ConfigMap, Deployment, Service, Ingress) rendered as valid YAML.
@@ -238,18 +238,18 @@ Output: 6 Kubernetes resources (StatefulSet, Service, ConfigMap, Deployment, Ser
 Use `--template` to scaffold different project types:
 
 ```bash
-npx reactnetes init my-project --template basic     # Simple app + db
-npx reactnetes init my-project --template fullstack # Frontend + API + DB
+npx r8s init my-project --template basic     # Simple app + db
+npx r8s init my-project --template fullstack # Frontend + API + DB
 ```
 
 ## Demo
 
-Run the included demo to see ReactNetes in action:
+Run the included demo to see r8s in action:
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/reactnetes.git
-cd reactnetes
+git clone https://github.com/yourusername/r8s.git
+cd r8s
 
 # Install dependencies
 npm install
@@ -272,7 +272,7 @@ Pre-built components for common infrastructure:
 Creates: StatefulSet + Service + ConfigMap + PVC
 
 ```tsx
-import { Postgres } from '@reactnetes/recipes';
+import { Postgres } from '@r8s/recipes';
 
 <Postgres
   name="api-db"
@@ -290,7 +290,7 @@ import { Postgres } from '@reactnetes/recipes';
 Creates: Ingress with nginx + cert-manager defaults
 
 ```tsx
-import { CustomIngress } from '@reactnetes/recipes';
+import { CustomIngress } from '@r8s/recipes';
 
 <CustomIngress
   name="api-ingress"
@@ -308,7 +308,7 @@ import { CustomIngress } from '@reactnetes/recipes';
 
 ### JSX Without React
 
-ReactNetes provides its own lightweight JSX factory. No React dependency, no virtual DOM — just a tree that flattens to Kubernetes resources:
+r8s provides its own lightweight JSX factory. No React dependency, no virtual DOM — just a tree that flattens to Kubernetes resources:
 
 ```tsx
 // This JSX...
@@ -356,7 +356,7 @@ The renderer recursively flattens everything. Your `<App />` can nest `<Database
 All Kubernetes resources are typed from the official OpenAPI spec:
 
 ```tsx
-import { Deployment, Service, Ingress } from '@reactnetes/k8s-types';
+import { Deployment, Service, Ingress } from '@r8s/k8s-types';
 
 // Full autocomplete and validation
 const deployment: Deployment = {
@@ -374,17 +374,17 @@ const deployment: Deployment = {
 ## CLI
 
 ```bash
-# Render default entry file (k8s/ReactNetes.tsx)
-npx reactnetes render
+# Render default entry file (k8s/r8s.tsx)
+npx r8s render
 
 # Render specific file
-npx reactnetes render --entry ./infra/manifest.tsx
+npx r8s render --entry ./infra/manifest.tsx
 
 # Output to file
-npx reactnetes render --out ./output/k8s.yaml
+npx r8s render --out ./output/k8s.yaml
 
 # Show help
-npx reactnetes render --help
+npx r8s render --help
 ```
 
 ## Examples
@@ -404,11 +404,11 @@ export function WebApp(props: { name: string; replicas: number; env: string }) {
   );
 }
 
-// k8s/overlays/staging/ReactNetes.tsx
+// k8s/overlays/staging/r8s.tsx
 import { WebApp } from '../../components/shared';
 export default () => <WebApp name="app" replicas={1} env="staging" />;
 
-// k8s/overlays/production/ReactNetes.tsx
+// k8s/overlays/production/r8s.tsx
 import { WebApp } from '../../components/shared';
 export default () => <WebApp name="app" replicas={5} env="production" />;
 ```
@@ -464,7 +464,7 @@ See the [`examples/`](./examples) directory for complete working examples.
 
 ## GitHub Actions
 
-ReactNetes includes a GitHub Actions workflow that automatically renders your Kubernetes manifests on every push. When you run `reactnetes init`, it creates `.github/workflows/render.yaml`:
+r8s includes a GitHub Actions workflow that automatically renders your Kubernetes manifests on every push. When you run `r8s init`, it creates `.github/workflows/render.yaml`:
 
 ```yaml
 name: Render Kubernetes Manifests
@@ -489,7 +489,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-      - run: npx reactnetes render --out k8s/manifest.yaml
+      - run: npx r8s render --out k8s/manifest.yaml
 
       - name: Commit rendered manifests
         run: |
@@ -502,7 +502,7 @@ jobs:
 
 ### How it works
 
-1. You edit `k8s/ReactNetes.tsx` and push to `main`
+1. You edit `k8s/r8s.tsx` and push to `main`
 2. GitHub Actions renders the TSX to `k8s/manifest.yaml`
 3. The rendered YAML is committed back to the repo
 4. Your GitOps tool (Flux, ArgoCD) picks up the YAML and applies it
@@ -531,7 +531,7 @@ jobs:
 
 ## Comparison
 
-| | Raw YAML | Helm | Kustomize | Pulumi | **ReactNetes** |
+| | Raw YAML | Helm | Kustomize | Pulumi | **r8s** |
 |:---|:---|:---|:---|:---|:---|
 | **Composition** | ❌ Copy-paste | ⚠️ Templates | ❌ Patches only | ✅ Code | ✅ **Components** |
 | **Type Safety** | ❌ | ❌ | ❌ | ✅ | ✅ **Full TS** |
@@ -554,13 +554,13 @@ npm test
 
 # Render example app
 cd examples/basic-app
-npx reactnetes render
+npx r8s render
 ```
 
 ## Architecture
 
 ```
-reactnetes/
+r8s/
 ├── packages/
 │   ├── k8s-types/      # TypeScript interfaces from K8s OpenAPI
 │   ├── core/           # JSX factory + renderer
@@ -573,10 +573,10 @@ reactnetes/
 ## Roadmap
 
 - [x] Auto-generate types from Kubernetes OpenAPI spec
-- [x] `reactnetes init` — scaffold new projects
+- [x] `r8s init` — scaffold new projects
 - [x] GitHub Actions workflow for auto-render
 - [ ] More recipes: Redis, Kafka, RabbitMQ, S3 buckets
-- [ ] `reactnetes search` — search recipe registry
+- [ ] `r8s search` — search recipe registry
 - [ ] Watch mode for development
 - [ ] Diff view between renders
 - [ ] Helm chart generation from components

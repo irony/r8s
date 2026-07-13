@@ -1,4 +1,4 @@
-import { jsx } from '@reactnetes/core';
+import { jsx } from '@r8s/core';
 import { Database } from './database';
 import { WebService } from './web-service';
 import { Ingress } from './ingress';

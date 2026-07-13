@@ -1,5 +1,5 @@
-import { jsx } from '@reactnetes/core';
-import { Keycloak, KeycloakRealmImport } from '@reactnetes/k8s-types';
+import { jsx } from '@r8s/core';
+import { Keycloak, KeycloakRealmImport } from '@r8s/k8s-types';
 
 export interface KeycloakInstanceProps {
   name: string;

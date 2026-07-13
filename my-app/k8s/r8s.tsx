@@ -1,41 +1,34 @@
 import { Postgres, CustomIngress } from '@r8s/recipes';
-import { LetsEncryptIssuer, ManagedCertificate } from '@r8s/recipes-cert-manager';
 
-export default function StagingApp() {
+export default function App() {
   return (
     <>
-      <LetsEncryptIssuer
-        name="letsencrypt-staging"
-        email="admin@example.com"
-        server="staging"
-      />
-
       <Postgres
         name="app-db"
-        namespace="staging"
-        database="app"
-        user="app"
-        password="staging-password"
-        storage="5Gi"
+        namespace="default"
+        database="myapp"
+        user="myapp"
+        password="changeme"
+        storage="10Gi"
       />
 
       <deployment
         apiVersion="apps/v1"
         kind="Deployment"
-        metadata={{ name: 'app', namespace: 'staging', labels: { app: 'app' } }}
+        metadata={{ name: 'app', labels: { app: 'app' } }}
         spec={{
-          replicas: 1,
+          replicas: 2,
           selector: { matchLabels: { app: 'app' } },
           template: {
             metadata: { labels: { app: 'app' } },
             spec: {
               containers: [{
                 name: 'app',
-                image: 'myapp/app:staging',
+                image: 'myapp/app:latest',
                 ports: [{ containerPort: 3000 }],
                 env: [{
                   name: 'DATABASE_URL',
-                  value: 'postgresql://app:staging-password@app-db:5432/app',
+                  value: 'postgresql://myapp:changeme@app-db:5432/myapp',
                 }],
               }],
             },
@@ -46,7 +39,7 @@ export default function StagingApp() {
       <service
         apiVersion="v1"
         kind="Service"
-        metadata={{ name: 'app', namespace: 'staging' }}
+        metadata={{ name: 'app' }}
         spec={{
           type: 'ClusterIP',
           selector: { app: 'app' },
@@ -56,10 +49,10 @@ export default function StagingApp() {
 
       <CustomIngress
         name="app-ingress"
-        namespace="staging"
-        host="staging-app.example.com"
+        host="app.example.com"
         serviceName="app"
         servicePort={80}
+        tlsSecretName="app-tls"
       />
     </>
   );

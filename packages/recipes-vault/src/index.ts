@@ -1,10 +1,10 @@
-import { jsx } from '@reactnetes/core';
+import { jsx } from '@r8s/core';
 import {
   VaultConnection,
   VaultAuth,
   VaultDynamicSecret,
   VaultStaticSecret,
-} from '@reactnetes/k8s-types';
+} from '@r8s/k8s-types';
 
 export interface VaultConnectionProps {
   name: string;

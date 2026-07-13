@@ -1,4 +1,4 @@
-import { Postgres, CustomIngress } from '@reactnetes/recipes';
+import { Postgres, CustomIngress } from '@r8s/recipes';
 
 export default function App() {
   return (

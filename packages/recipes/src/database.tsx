@@ -1,5 +1,5 @@
-import { jsx } from '@reactnetes/core';
-import { Cluster } from '@reactnetes/k8s-types';
+import { jsx } from '@r8s/core';
+import { Cluster } from '@r8s/k8s-types';
 
 export interface DatabaseProps {
   name: string;

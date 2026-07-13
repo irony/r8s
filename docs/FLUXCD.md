@@ -1,6 +1,6 @@
-# ReactNetes + FluxCD GitOps Integration
+# r8s + FluxCD GitOps Integration
 
-This guide shows how to integrate ReactNetes with FluxCD for a complete GitOps workflow.
+This guide shows how to integrate r8s with FluxCD for a complete GitOps workflow.
 
 ## Architecture
 
@@ -33,7 +33,7 @@ This guide shows how to integrate ReactNetes with FluxCD for a complete GitOps w
 
 ## How It Works
 
-1. **Developer edits** `k8s/ReactNetes.tsx` and pushes to `main`
+1. **Developer edits** `k8s/r8s.tsx` and pushes to `main`
 2. **GitHub Actions** renders the TSX to `k8s/manifest.yaml`
 3. **GitHub Actions** commits the rendered YAML back to the repo
 4. **FluxCD** detects the change in `k8s/manifest.yaml`
@@ -84,7 +84,7 @@ spec:
 
 ### 4. GitHub Actions Workflow
 
-The `reactnetes init` command already creates this for you:
+The `r8s init` command already creates this for you:
 
 ```yaml
 name: Render Kubernetes Manifests
@@ -110,7 +110,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-      - run: npx reactnetes render --out k8s/manifest.yaml
+      - run: npx r8s render --out k8s/manifest.yaml
 
       - name: Commit rendered manifests
         run: |
@@ -129,7 +129,7 @@ my-app/
 │   └── workflows/
 │       └── render.yaml       # Auto-render on push
 ├── k8s/
-│   ├── ReactNetes.tsx        # Your components (source of truth)
+│   ├── r8s.tsx        # Your components (source of truth)
 │   └── manifest.yaml         # Rendered output (auto-generated)
 ├── package.json
 └── tsconfig.json
@@ -178,9 +178,9 @@ my-app/
 │   │   └── shared.tsx
 │   ├── overlays/
 │   │   ├── staging/
-│   │   │   └── ReactNetes.tsx
+│   │   │   └── r8s.tsx
 │   │   └── production/
-│   │       └── ReactNetes.tsx
+│   │       └── r8s.tsx
 │   └── manifest.yaml          # Not used with overlays
 ├── .github/
 │   └── workflows/
@@ -195,8 +195,8 @@ my-app/
 GitHub Actions renders both:
 
 ```yaml
-- run: npx reactnetes render --entry k8s/overlays/staging/ReactNetes.tsx --out k8s/staging.yaml
-- run: npx reactnetes render --entry k8s/overlays/production/ReactNetes.tsx --out k8s/production.yaml
+- run: npx r8s render --entry k8s/overlays/staging/r8s.tsx --out k8s/staging.yaml
+- run: npx r8s render --entry k8s/overlays/production/r8s.tsx --out k8s/production.yaml
 ```
 
 FluxCD Kustomizations:
@@ -227,7 +227,7 @@ spec:
 
 ## Benefits
 
-| Feature | Without ReactNetes | With ReactNetes |
+| Feature | Without r8s | With r8s |
 |:---|:---|:---|
 | **Source of truth** | YAML files | TSX components |
 | **Type safety** | ❌ | ✅ |
@@ -259,7 +259,7 @@ Ensure the workflow file is on the default branch (`main` or `master`).
 
 ### "Rendered YAML is empty"
 
-Check that `k8s/ReactNetes.tsx` exports a default component:
+Check that `k8s/r8s.tsx` exports a default component:
 
 ```tsx
 export default function App() {

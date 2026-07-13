@@ -1,7 +1,7 @@
 // Platform team's "Golden Path" template
 // Teams just fill in the blanks — everything else is standardized
 
-import { Postgres, CustomIngress } from '@reactnetes/recipes';
+import { Postgres, CustomIngress } from '@r8s/recipes';
 
 interface StandardWebAppProps {
   // Required: What the team controls

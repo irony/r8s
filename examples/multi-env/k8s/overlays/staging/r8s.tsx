@@ -1,4 +1,4 @@
-import { Fragment } from '@reactnetes/core';
+import { Fragment } from '@r8s/core';
 import { WebApp, Database } from '../../components/shared';
 
 export default function Staging() {

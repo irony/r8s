@@ -1,5 +1,5 @@
 {
-  "name": "@reactnetes/k8s-types",
+  "name": "@r8s/k8s-types",
   "version": "0.1.0",
   "description": "Auto-generated Kubernetes TypeScript types from OpenAPI spec",
   "main": "./dist/index.js",

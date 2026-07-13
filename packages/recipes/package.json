@@ -1,7 +1,7 @@
 {
-  "name": "@reactnetes/recipes",
+  "name": "@r8s/recipes",
   "version": "0.1.0",
-  "description": "Pre-built Kubernetes component recipes for ReactNetes",
+  "description": "Pre-built Kubernetes component recipes for r8s",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -10,8 +10,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@reactnetes/core": "*",
-    "@reactnetes/k8s-types": "*"
+    "@r8s/core": "*",
+    "@r8s/k8s-types": "*"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

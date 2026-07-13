@@ -1,5 +1,5 @@
-import { jsx } from '@reactnetes/core';
-import { Ingress } from '@reactnetes/k8s-types';
+import { jsx } from '@r8s/core';
+import { Ingress } from '@r8s/k8s-types';
 
 export interface IngressProps {
   name: string;

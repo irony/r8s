@@ -1,9 +1,9 @@
-import { render, ReactNetesElement } from '@reactnetes/core';
+import { render, r8sElement } from '@r8s/core';
 import * as yaml from 'js-yaml';
 import { resolve } from 'path';
 
 interface EntryModule {
-  default: ReactNetesElement | ((props: unknown) => ReactNetesElement);
+  default: r8sElement | ((props: unknown) => r8sElement);
 }
 
 export async function renderToYaml(entryFile: string): Promise<string> {
@@ -22,7 +22,7 @@ export async function renderToYaml(entryFile: string): Promise<string> {
       platform: 'node',
       write: false,
       jsx: 'automatic',
-      jsxImportSource: '@reactnetes/core',
+      jsxImportSource: '@r8s/core',
       external: [],
     });
   } catch (error) {
@@ -58,7 +58,7 @@ export async function renderToYaml(entryFile: string): Promise<string> {
     );
   }
 
-  let element: ReactNetesElement;
+  let element: r8sElement;
   if (typeof Component === 'function') {
     element = Component({});
   } else {

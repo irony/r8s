@@ -1,7 +1,7 @@
 {
-  "name": "@reactnetes/core",
+  "name": "@r8s/core",
   "version": "0.1.0",
-  "description": "JSX factory and renderer for ReactNetes",
+  "description": "JSX factory and renderer for r8s",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -27,7 +27,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@reactnetes/k8s-types": "*"
+    "@r8s/k8s-types": "*"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

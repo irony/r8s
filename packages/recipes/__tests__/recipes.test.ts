@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@reactnetes/core';
+import { render } from '@r8s/core';
 import { Postgres, CustomIngress } from '../src/index';
-import { jsx, Fragment } from '@reactnetes/core';
+import { jsx, Fragment } from '@r8s/core';
 
 describe('Postgres Recipe (CNPG)', () => {
   it('should render CNPG Cluster and Secret', () => {

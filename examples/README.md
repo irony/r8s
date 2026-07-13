@@ -1,6 +1,6 @@
-# ReactNetes Examples
+# r8s Examples
 
-This directory contains example projects demonstrating different ReactNetes patterns.
+This directory contains example projects demonstrating different r8s patterns.
 
 ## Examples
 
@@ -10,7 +10,7 @@ Simple single-application setup with a web app and database.
 
 ```bash
 cd basic-app
-npx reactnetes render
+npx r8s render
 ```
 
 **Demonstrates:**
@@ -26,10 +26,10 @@ Shared components used across staging and production environments.
 cd multi-env
 
 # Render staging
-npx reactnetes render --entry k8s/overlays/staging/ReactNetes.tsx
+npx r8s render --entry k8s/overlays/staging/r8s.tsx
 
 # Render production
-npx reactnetes render --entry k8s/overlays/production/ReactNetes.tsx
+npx r8s render --entry k8s/overlays/production/r8s.tsx
 ```
 
 **Demonstrates:**
@@ -44,7 +44,7 @@ Platform team's shared library with public and internal services.
 
 ```bash
 cd microservices
-npx reactnetes render
+npx r8s render
 ```
 
 **Demonstrates:**
@@ -61,10 +61,10 @@ npx reactnetes render
 cd blueprint
 
 # Render ecommerce app
-npx reactnetes render --entry k8s/apps/ecommerce.tsx
+npx r8s render --entry k8s/apps/ecommerce.tsx
 
 # Render analytics app
-npx reactnetes render --entry k8s/apps/analytics.tsx
+npx r8s render --entry k8s/apps/analytics.tsx
 ```
 
 **Demonstrates:**
@@ -79,11 +79,11 @@ All examples can be rendered with the CLI:
 
 ```bash
 # From the example directory
-npx reactnetes render
+npx r8s render
 
 # Or specify entry file
-npx reactnetes render --entry k8s/overlays/production/ReactNetes.tsx
+npx r8s render --entry k8s/overlays/production/r8s.tsx
 
 # Output to file
-npx reactnetes render --out manifest.yaml
+npx r8s render --out manifest.yaml
 ```

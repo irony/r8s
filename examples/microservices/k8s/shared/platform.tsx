@@ -1,7 +1,7 @@
 // Platform team's shared components library
 // This would be published as @mycompany/platform-k8s
 
-import { CustomIngress } from '@reactnetes/recipes';
+import { CustomIngress } from '@r8s/recipes';
 
 interface ServiceProps {
   name: string;

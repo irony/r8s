@@ -1,4 +1,4 @@
-import { App } from '@reactnetes/recipes';
+import { App } from '@r8s/recipes';
 
 /**
  * My Application

@@ -1,5 +1,5 @@
-import { jsx } from '@reactnetes/core';
-import { ClusterIssuer, Certificate } from '@reactnetes/k8s-types';
+import { jsx } from '@r8s/core';
+import { ClusterIssuer, Certificate } from '@r8s/k8s-types';
 
 export interface LetsEncryptIssuerProps {
   name: string;
