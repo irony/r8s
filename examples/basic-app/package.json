@@ -1,0 +1,14 @@
+{
+  "name": "basic-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "render-k8s": "reactnetes render",
+    "test": "echo 'No tests for example app'"
+  },
+  "dependencies": {
+    "@reactnetes/core": "*",
+    "@reactnetes/recipes": "*",
+    "@reactnetes/cli": "*"
+  }
+}

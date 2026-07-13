@@ -1,0 +1,46 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: fluxcd-demo
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/my-org/fluxcd-demo
+  ref:
+    branch: main
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: fluxcd-demo-staging
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./k8s
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: fluxcd-demo
+  targetNamespace: staging
+  dependsOn:
+    - name: cert-manager
+    - name: ingress-nginx
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: fluxcd-demo-production
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./k8s
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: fluxcd-demo
+  targetNamespace: production
+  dependsOn:
+    - name: cert-manager
+    - name: ingress-nginx
+    - name: fluxcd-demo-staging
+  suspend: true  # Require manual promotion

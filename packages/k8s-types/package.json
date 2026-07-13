@@ -1,0 +1,17 @@
+{
+  "name": "@reactnetes/k8s-types",
+  "version": "0.1.0",
+  "description": "Auto-generated Kubernetes TypeScript types from OpenAPI spec",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "generate": "node scripts/generate-types.js",
+    "test": "echo 'No tests for types package'",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^6.7.0",
+    "typescript": "^5.3.0"
+  }
+}

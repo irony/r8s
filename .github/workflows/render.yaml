@@ -1,0 +1,49 @@
+name: Render Kubernetes Manifests
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'k8s/**'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'k8s/**'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Render Kubernetes manifests
+        run: npx reactnetes render --out k8s/manifest.yaml
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --quiet k8s/manifest.yaml || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit rendered manifests
+        if: steps.git-check.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add k8s/manifest.yaml
+          git commit -m "chore: render kubernetes manifests [skip ci]"
+          git push

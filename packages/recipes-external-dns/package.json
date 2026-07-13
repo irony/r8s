@@ -1,0 +1,20 @@
+{
+  "name": "@reactnetes/recipes-external-dns",
+  "version": "0.1.0",
+  "description": "ReactNetes recipes for external-dns",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@reactnetes/core": "*",
+    "@reactnetes/k8s-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}
