@@ -1,5 +1,5 @@
 {
-  "name": "@r8s/recipes-keycloak",
+  "name": "@r8s/keycloak",
   "version": "0.1.0",
   "description": "r8s recipes for Keycloak operator",
   "main": "./dist/index.js",

@@ -1,7 +1,7 @@
 {
-  "name": "@r8s/recipes-vault",
+  "name": "@r8s/external-dns",
   "version": "0.1.0",
-  "description": "r8s recipes for HashiCorp Vault / OpenBao operator",
+  "description": "r8s recipes for external-dns",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {

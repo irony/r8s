@@ -1,5 +1,5 @@
 {
-  "name": "@r8s/recipes-cert-manager",
+  "name": "@r8s/cert-manager",
   "version": "0.1.0",
   "description": "r8s recipes for cert-manager operator",
   "main": "./dist/index.js",

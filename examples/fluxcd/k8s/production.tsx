@@ -1,5 +1,5 @@
 import { Postgres, CustomIngress } from '@r8s/recipes';
-import { LetsEncryptIssuer, ManagedCertificate } from '@r8s/recipes-cert-manager';
+import { LetsEncryptIssuer, ManagedCertificate } from '@r8s/cert-manager';
 
 export default function ProductionApp() {
   return (
