@@ -26,7 +26,10 @@
       "@r8s/external-dns": ["./packages/external-dns/src/index.ts"],
       "@r8s/redis": ["./packages/redis/src/index.ts"],
       "@r8s/gateway": ["./packages/gateway/src/index.ts"],
-      "@r8s/monitoring": ["./packages/monitoring/src/index.ts"]
+      "@r8s/monitoring": ["./packages/monitoring/src/index.ts"],
+      "@r8s/clickhouse": ["./packages/clickhouse/src/index.ts"],
+      "@r8s/logging": ["./packages/logging/src/index.ts"],
+      "@r8s/loki": ["./packages/loki/src/index.ts"]
     }
   },
   "files": [],
@@ -41,6 +44,9 @@
     { "path": "./packages/redis" },
     { "path": "./packages/gateway" },
     { "path": "./packages/monitoring" },
+    { "path": "./packages/clickhouse" },
+    { "path": "./packages/logging" },
+    { "path": "./packages/loki" },
     { "path": "./packages/cli" }
   ]
 }

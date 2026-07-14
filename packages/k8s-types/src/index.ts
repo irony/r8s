@@ -285,3 +285,6 @@ export * from './cnpg';
 
 // Operator base types
 export * from './operator';
+
+// Shared routing abstractions
+export * from './routing';

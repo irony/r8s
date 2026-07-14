@@ -1,5 +1,6 @@
 import { jsx } from '@r8s/core';
 import { helmOperator } from '@r8s/k8s-types';
+import type { BaseRouteProps, RouteTarget, TLSConfig, ListenerConfig } from '@r8s/k8s-types';
 
 /** Envoy Gateway operator declaration */
 export const envoyGatewayOperator = (version = '1.7.0') =>
@@ -28,19 +29,7 @@ export interface GatewayProps {
   name: string;
   namespace?: string;
   gatewayClassName?: string;
-  listeners: Array<{
-    name: string;
-    protocol: 'HTTP' | 'HTTPS' | 'TCP' | 'TLS';
-    port: number;
-    hostname?: string;
-    tls?: {
-      mode?: 'Terminate' | 'Passthrough';
-      certificateRefs?: Array<{
-        name: string;
-        namespace?: string;
-      }>;
-    };
-  }>;
+  listeners: ListenerConfig[];
   addresses?: Array<{
     type?: 'IPAddress' | 'Hostname';
     value: string;
@@ -120,12 +109,7 @@ export interface HTTPRouteProps {
         type?: 'Exact' | 'RegularExpression';
       }>;
     }>;
-    backendRefs: Array<{
-      name: string;
-      namespace?: string;
-      port: number;
-      weight?: number;
-    }>;
+    backendRefs: RouteTarget[];
     filters?: Array<{
       type: 'URLRewrite' | 'RequestHeaderModifier' | 'ResponseHeaderModifier' | 'RequestRedirect' | 'RequestMirror' | 'ExtensionRef';
       urlRewrite?: {
