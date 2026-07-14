@@ -1,5 +1,13 @@
-import { jsx } from '@r8s/core';
+import { jsx, useContext } from '@r8s/core';
 import { Keycloak, KeycloakRealmImport } from '@r8s/k8s-types';
+import { DatabaseContext } from '@r8s/core/defaults';
+import { olmOperator } from '@r8s/k8s-types';
+
+/** Keycloak operator declaration (requires OLM) */
+export const keycloakOperator = (version = '24.0.0') =>
+  olmOperator('keycloak-operator', 'keycloak-operator', 'fast', version, {
+    description: 'Keycloak identity and access management operator',
+  });
 
 export interface KeycloakInstanceProps {
   name: string;
@@ -14,6 +22,17 @@ export interface KeycloakInstanceProps {
   ingressClassName?: string;
 }
 
+/**
+ * Keycloak identity provider with automatic database wiring.
+ *
+ * When placed inside a Database component, it auto-connects:
+ * <Database name="keycloak-db" storage="10Gi">
+ *   <KeycloakInstance name="keycloak" hostname="auth.example.com" />
+ * </Database>
+ *
+ * Or provide explicit dbHost for external databases:
+ * <KeycloakInstance name="keycloak" hostname="auth.example.com" dbHost="my-db-rw" />
+ */
 export function KeycloakInstance(props: KeycloakInstanceProps) {
   const {
     name,
@@ -21,12 +40,24 @@ export function KeycloakInstance(props: KeycloakInstanceProps) {
     hostname,
     instances = 1,
     tlsSecretName,
-    dbHost,
+    dbHost: explicitDbHost,
     dbName = 'keycloak',
-    dbUsernameSecret,
-    dbPasswordSecret,
+    dbUsernameSecret: explicitUsernameSecret,
+    dbPasswordSecret: explicitPasswordSecret,
     ingressClassName = 'nginx',
   } = props;
+
+  // Auto-wire from DatabaseContext if available
+  const dbContext = useContext(DatabaseContext);
+  const dbHost = explicitDbHost ?? dbContext?.host;
+  const dbUsernameSecret = explicitUsernameSecret ?? (dbContext && {
+    name: dbContext.passwordSecret,
+    key: 'username',
+  });
+  const dbPasswordSecret = explicitPasswordSecret ?? (dbContext && {
+    name: dbContext.passwordSecret,
+    key: dbContext.passwordKey,
+  });
 
   const keycloak: Keycloak = {
     apiVersion: 'k8s.keycloak.org/v2alpha1',

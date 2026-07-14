@@ -6,12 +6,12 @@ Stop writing YAML. Start composing infrastructure.
 
 ```tsx
 // k8s/r8s.tsx
-import { Postgres, CustomIngress } from '@r8s/recipes';
+import { Database, Ingress } from '@r8s/recipes';
 
 export default () => (
   <>
-    <Postgres name="api-db" database="myapp" storage="20Gi" />
-    
+    <Database name="api-db" storage="20Gi" />
+
     <deployment
       apiVersion="apps/v1"
       kind="Deployment"
@@ -29,8 +29,8 @@ export default () => (
         }
       }}
     />
-    
-    <CustomIngress
+
+    <Ingress
       host="api.example.com"
       serviceName="api"
       tlsSecretName="api-tls"
@@ -41,13 +41,8 @@ export default () => (
 
 ```bash
 $ npx r8s render
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: api-db
----
-apiVersion: v1
-kind: Service
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
 metadata:
   name: api-db
 ---
@@ -56,18 +51,18 @@ kind: Deployment
 metadata:
   name: api
 ---
-# ... 6 resources rendered from 1 file
+# ... 4 resources rendered from 1 file
 ```
 
 ## The Problem
 
 You have a microservice. It needs:
 - A Deployment
-- A Service  
-- A ConfigMap for env vars
-- A Secret for credentials
+- A Service
 - An Ingress with TLS
-- A Postgres database
+- A PostgreSQL database
+- cert-manager for certificates
+- nginx-ingress for routing
 
 **Option A: Raw YAML** — 300+ lines of boilerplate. Copy-paste between services. Hope you didn't miss an indentation.
 
@@ -83,24 +78,24 @@ r8s brings **component composition** to Kubernetes — the same pattern that mad
 
 | Concept | UI (React) | Infrastructure (r8s) |
 |:---|:---|:---|
-| Component | `<Button />` | `<Postgres />` |
+| Component | `<Button />` | `<Database />` |
 | Composition | `<Header><Nav /></Header>` | `<App><Api /><Db /></App>` |
-| Props | `<Button color="red" />` | `<Postgres storage="20Gi" />` |
+| Props | `<Button color="red" />` | `<Database storage="20Gi" />` |
 | Fragment | `<><A /><B /></>` | `<><Deployment /><Service /></>` |
-| Reuse | `import Button from 'lib'` | `import Postgres from '@r8s/recipes'` |
+| Reuse | `import Button from 'lib'` | `import Database from '@r8s/recipes'` |
 
 ### Why This Matters
 
 **1. DRY by default**
 
-Your 10 microservices all need the same Postgres setup? One component, imported everywhere:
+Your 10 microservices all need the same database setup? One component, imported everywhere:
 
 ```tsx
-import { Postgres } from '@r8s/recipes';
+import { Database } from '@r8s/recipes';
 
 // Same component, different props
-<Postgres name="user-db" database="users" />
-<Postgres name="order-db" database="orders" storage="100Gi" />
+<Database name="user-db" storage="10Gi" />
+<Database name="order-db" storage="100Gi" />
 ```
 
 **2. Type safety out of the box**
@@ -112,7 +107,7 @@ Misspelled `containerPort`? TypeScript catches it. Wrong `apiVersion`? Red squig
 ```tsx
 function App({ environment }: { environment: 'staging' | 'production' }) {
   const replicas = environment === 'production' ? 3 : 1;
-  
+
   return (
     <>
       <deployment spec={{ replicas, ... }} />
@@ -122,20 +117,43 @@ function App({ environment }: { environment: 'staging' | 'production' }) {
 }
 ```
 
-**4. Flat output**
+**4. Explicit operator dependencies**
+
+Every component declares which Kubernetes operators it needs. No more "forgot to install cert-manager" surprises:
+
+```tsx
+import { render } from '@r8s/core';
+import { Database, Ingress } from '@r8s/recipes';
+
+const result = render(
+  <>
+    <Database name="app-db" storage="10Gi" />
+    <Ingress host="app.example.com" serviceName="app" tlsSecretName="app-tls" />
+  </>
+);
+
+console.log(result.operators);
+// [
+//   { name: 'cnpg', source: { type: 'helm', chart: 'cloudnative-pg', ... } },
+//   { name: 'nginx-ingress', source: { type: 'helm', chart: 'ingress-nginx', ... } },
+//   { name: 'cert-manager', source: { type: 'helm', chart: 'cert-manager', ... } }
+// ]
+```
+
+**5. Flat output**
 
 Nested components render to a flat list of Kubernetes resources. No magic, no runtime — just YAML you can `kubectl apply`:
 
 ```
 <App>                      →   ---
-  <Postgres />             →   apiVersion: apps/v1
-  <Api />                  →   kind: StatefulSet
+  <Database />             →   apiVersion: postgresql.cnpg.io/v1
+  <Api />                  →   kind: Cluster
 </App>                     →   metadata:
-                                name: api-db
-                              ---
-                              apiVersion: v1
-                              kind: Service
-                              ...
+                                 name: api-db
+                               ---
+                               apiVersion: apps/v1
+                               kind: Deployment
+                               ...
 ```
 
 ## Quick Start
@@ -158,17 +176,14 @@ This scaffolds a complete project with:
 Open `k8s/r8s.tsx` and customize:
 
 ```tsx
-import { Postgres, CustomIngress } from '@r8s/recipes';
+import { Database, Ingress } from '@r8s/recipes';
 
 export default function App() {
   return (
     <>
-      <Postgres
+      <Database
         name="myapp-db"
         namespace="production"
-        database="myapp"
-        user="myapp"
-        password="supersecret"
         storage="20Gi"
       />
 
@@ -188,7 +203,7 @@ export default function App() {
                 ports: [{ containerPort: 3000 }],
                 env: [{
                   name: 'DATABASE_URL',
-                  value: 'postgresql://myapp:supersecret@myapp-db:5432/myapp',
+                  value: 'postgresql://myapp-db-rw:5432/myapp-db',
                 }],
               }],
             },
@@ -207,7 +222,7 @@ export default function App() {
         }}
       />
 
-      <CustomIngress
+      <Ingress
         name="myapp-ingress"
         namespace="production"
         host="myapp.example.com"
@@ -231,7 +246,7 @@ $ npm run render-k8s
 $ npx r8s render --out k8s/manifest.yaml
 ```
 
-Output: 6 Kubernetes resources (StatefulSet, Service, ConfigMap, Deployment, Service, Ingress) rendered as valid YAML.
+Output: Kubernetes resources rendered as valid YAML, plus a list of required operators.
 
 ### Templates
 
@@ -242,57 +257,124 @@ npx r8s init my-project --template basic     # Simple app + db
 npx r8s init my-project --template fullstack # Frontend + API + DB
 ```
 
-## Demo
+## Operator Dependencies
 
-Run the included demo to see r8s in action:
+r8s components declare their Kubernetes operator dependencies explicitly. This makes your infrastructure:
 
-```bash
-# Clone the repo
-git clone https://github.com/yourusername/r8s.git
-cd r8s
+- **Type-safe**: declared in code, not documentation
+- **Testable**: verified in unit tests
+- **Versioned**: specific operator versions pinned
+- **Composable**: multiple components can share the same operator
 
-# Install dependencies
-npm install
+### How It Works
 
-# Run the demo
-./demo.sh
+Components declare operators using `declareOperator()`:
+
+```tsx
+import { declareOperator, useContext } from '@r8s/core';
+import { OperatorContext } from '@r8s/core/defaults';
+import { cnpgOperator } from '@r8s/recipes';
+
+function Database(props) {
+  const sharedOperators = useContext(OperatorContext);
+
+  // Only declare if not already provided via context
+  const hasCNPG = sharedOperators.some(op => op.name === 'cnpg');
+
+  return [
+    !hasCNPG && declareOperator(cnpgOperator('1.22.5')),
+    <Cluster ... />,
+  ];
+}
 ```
 
-This will show you:
-1. The project structure
-2. The TSX source file
-3. The rendered YAML output
+The renderer collects all operators and deduplicates by name:
+
+```tsx
+import { render } from '@r8s/core';
+
+const result = render(<MyApp />);
+
+// All required operators
+console.log(result.operators);
+
+// All Kubernetes resources
+console.log(result.resources);
+```
+
+### Sharing Operators via Context
+
+For a complete stack, provide shared operators via `OperatorContext`:
+
+```tsx
+import { OperatorContext } from '@r8s/core/defaults';
+import { Database, Ingress, App } from '@r8s/recipes';
+import { cnpgOperator, nginxIngressOperator } from '@r8s/recipes';
+import { certManagerOperator } from '@r8s/cert-manager';
+
+export default function Platform() {
+  return (
+    <OperatorContext.Provider value={[
+      cnpgOperator('1.22.5'),
+      certManagerOperator('1.14.0'),
+      nginxIngressOperator('1.15.1'),
+    ]}>
+      <Database name="app-db" storage="10Gi" />
+      <App name="api" domain="api.example.com" image="myapp/api:v1" database tls />
+    </OperatorContext.Provider>
+  );
+}
+```
+
+When operators are provided via context, components won't duplicate them.
+
+### Available Operators
+
+Each package exports its own operator factory:
+
+```tsx
+import { cnpgOperator, nginxIngressOperator } from '@r8s/recipes';
+import { certManagerOperator } from '@r8s/cert-manager';
+import { externalDNSOperator } from '@r8s/external-dns';
+import { vaultSecretsOperator } from '@r8s/vault';
+import { keycloakOperator } from '@r8s/keycloak';
+
+cnpgOperator('1.22.5');          // PostgreSQL operator
+nginxIngressOperator('1.15.1');  // Ingress controller
+certManagerOperator('1.14.0');    // TLS certificates
+externalDNSOperator('6.28.0');    // DNS management
+vaultSecretsOperator('0.5.0');   // Secret management
+keycloakOperator('24.0.0');       // Identity management
+```
 
 ## Recipes
 
 Pre-built components for common infrastructure:
 
-### `<Postgres />`
+### `<Database />`
 
-Creates: StatefulSet + Service + ConfigMap + PVC
+Creates: CloudNativePG Cluster (3-instance HA)
 
 ```tsx
-import { Postgres } from '@r8s/recipes';
+import { Database } from '@r8s/recipes';
 
-<Postgres
+<Database
   name="api-db"
   namespace="production"
-  database="myapp"
-  user="myapp"
-  password="supersecret"
   storage="20Gi"
-  replicas={1}
 />
 ```
 
-### `<CustomIngress />`
+**Automatically declares:** `cnpg` operator
+
+### `<Ingress />`
 
 Creates: Ingress with nginx + cert-manager defaults
 
 ```tsx
-import { CustomIngress } from '@r8s/recipes';
+import { Ingress } from '@r8s/recipes';
 
-<CustomIngress
+<Ingress
   name="api-ingress"
   host="api.example.com"
   serviceName="api"
@@ -303,6 +385,28 @@ import { CustomIngress } from '@r8s/recipes';
   }}
 />
 ```
+
+**Automatically declares:** `nginx-ingress` operator, `cert-manager` operator (when TLS enabled)
+
+### `<App />`
+
+Creates: Complete application stack (Database + WebService + Ingress)
+
+```tsx
+import { App } from '@r8s/recipes';
+
+<App
+  name="myapp"
+  domain="myapp.example.com"
+  image="mycompany/myapp:v1.2.3"
+  port={3000}
+  replicas={3}
+  database={true}
+  tls={true}
+/>
+```
+
+**Automatically declares:** `cnpg`, `nginx-ingress`, `cert-manager` operators
 
 ## How It Works
 
@@ -337,19 +441,44 @@ r8s provides its own lightweight JSX factory. No React dependency, no virtual DO
 
 ### Function Components
 
-Components can return single resources or arrays:
+Components can return single resources, arrays, or operator declarations:
 
 ```tsx
-function Postgres(props) {
+function Database(props) {
   return [
-    <statefulset apiVersion="apps/v1" kind="StatefulSet" ... />,
-    <service apiVersion="v1" kind="Service" ... />,
-    <configmap apiVersion="v1" kind="ConfigMap" ... />,
+    declareOperator(cnpgOperator('1.22.5')),
+    <Cluster apiVersion="postgresql.cnpg.io/v1" kind="Cluster" ... />,
   ];
 }
 ```
 
-The renderer recursively flattens everything. Your `<App />` can nest `<Database />` and `<Api />`, and you get a flat list of YAML documents.
+The renderer recursively flattens everything and collects operators. Your `<App />` can nest `<Database />` and `<Api />`, and you get a flat list of YAML documents plus all required operators.
+
+### Context System
+
+r8s includes a React-like context system for sharing configuration:
+
+```tsx
+import { Namespace, Labels, OperatorContext } from '@r8s/core/defaults';
+import { cnpgOperator } from '@r8s/recipes';
+import { certManagerOperator } from '@r8s/cert-manager';
+
+export default function Platform() {
+  return (
+    <Namespace.Provider value="production">
+      <Labels.Provider value={{ app: 'myapp', team: 'platform' }}>
+        <OperatorContext.Provider value={[
+          cnpgOperator('1.22.5'),
+          certManagerOperator('1.14.0'),
+        ]}>
+          <Database name="app-db" storage="10Gi" />
+          <App name="api" domain="api.example.com" image="myapp/api:v1" database tls />
+        </OperatorContext.Provider>
+      </Labels.Provider>
+    </Namespace.Provider>
+  );
+}
+```
 
 ### Type Safety
 
@@ -442,10 +571,10 @@ Standardized template with sensible defaults:
 export function StandardWebApp(props: { name: string; image: string; domain: string }) {
   return (
     <>
-      <Postgres name={`${props.name}-db`} ... />
+      <Database name={`${props.name}-db`} ... />
       <deployment ... />  // With monitoring, tracing, health checks
       <service ... />
-      <CustomIngress ... />
+      <Ingress ... />
     </>
   );
 }
@@ -514,9 +643,9 @@ jobs:
 │  Developer  │ ──────────────→ │  GitHub Repo │ ──────────────→ │  manifest   │
 │             │               │              │                 │   .yaml     │
 └─────────────┘               └──────────────┘                 └──────┬──────┘
-                                                                        │
-                                                                        │ sync
-                                                                        ▼
+                                                                      │
+                                                                      │ sync
+                                                                      ▼
                                                                ┌──────────────┐
                                                                │   FluxCD /   │
                                                                │   ArgoCD     │
@@ -536,6 +665,7 @@ jobs:
 | **Composition** | ❌ Copy-paste | ⚠️ Templates | ❌ Patches only | ✅ Code | ✅ **Components** |
 | **Type Safety** | ❌ | ❌ | ❌ | ✅ | ✅ **Full TS** |
 | **DRY** | ❌ | ⚠️ Values files | ⚠️ Bases | ✅ | ✅ **Import & reuse** |
+| **Operator Tracking** | ❌ | ⚠️ Subcharts | ❌ | ✅ | ✅ **Explicit deps** |
 | **Learning Curve** | Low | Medium | Low | High | **Low** |
 | **Output** | YAML | YAML | YAML | Direct API | **YAML** |
 | **GitOps Friendly** | ✅ | ✅ | ✅ | ⚠️ | ✅ **Yes** |
@@ -562,12 +692,17 @@ npx r8s render
 ```
 r8s/
 ├── packages/
-│   ├── k8s-types/      # TypeScript interfaces from K8s OpenAPI
-│   ├── core/           # JSX factory + renderer
+│   ├── k8s-types/      # TypeScript interfaces from K8s OpenAPI + Operator types
+│   ├── core/           # JSX factory + renderer + context system
 │   ├── cli/            # Command-line tool
 │   └── recipes/        # Pre-built component library
-└── examples/
-    └── basic-app/      # Example application
+├── examples/
+│   ├── basic-app/      # Simple app + database
+│   ├── simple-app/     # One-liner App component
+│   ├── operators-demo/ # Platform with Vault, Keycloak, cert-manager
+│   ├── microservices/  # E-commerce platform
+│   └── fluxcd/         # Staging + production overlays
+└── docs/               # Documentation site
 ```
 
 ## Roadmap
@@ -575,6 +710,8 @@ r8s/
 - [x] Auto-generate types from Kubernetes OpenAPI spec
 - [x] `r8s init` — scaffold new projects
 - [x] GitHub Actions workflow for auto-render
+- [x] **Operator dependency tracking** — explicit, type-safe operator declarations
+- [x] **Context system** — Namespace, Labels, OperatorContext for composition
 - [ ] More recipes: Redis, Kafka, RabbitMQ, S3 buckets
 - [ ] `r8s search` — search recipe registry
 - [ ] Watch mode for development

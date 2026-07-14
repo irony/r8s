@@ -4,3 +4,39 @@ dist/
 .DS_Store
 *.log
 test-temp/
+
+# Compiled output in examples (source is .tsx)
+examples/**/*.js
+examples/**/*.js.map
+examples/**/*.d.ts
+examples/**/*.d.ts.map
+
+# Compiled test files
+packages/**/__tests__/*.js
+packages/**/__tests__/*.js.map
+packages/**/__tests__/*.d.ts
+packages/**/__tests__/*.d.ts.map
+
+# Compiled source files (should use dist/)
+packages/**/*.js
+packages/**/*.js.map
+packages/**/*.d.ts
+packages/**/*.d.ts.map
+
+# Docs build output
+docs/**/*.js
+docs/**/*.js.map
+docs/**/*.d.ts
+docs/**/*.d.ts.map
+
+# Root config files
+/*.js
+/*.js.map
+/*.d.ts
+/*.d.ts.map
+
+# my-app generated files
+my-app/**/*.js
+my-app/**/*.js.map
+my-app/**/*.d.ts
+my-app/**/*.d.ts.map

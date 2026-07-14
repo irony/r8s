@@ -1,5 +1,18 @@
 import { jsx } from '@r8s/core';
 import { DNSEndpoint } from '@r8s/k8s-types';
+import { manifestOperator } from '@r8s/k8s-types';
+
+/** ExternalDNS operator declaration */
+export const externalDNSOperator = (version = '0.14.0') =>
+  manifestOperator(
+    'external-dns',
+    `https://raw.githubusercontent.com/kubernetes-sigs/external-dns/v${version}/docs/sources/manifest.yaml`,
+    version,
+    {
+      description: 'ExternalDNS for automatic DNS management',
+      namespace: 'external-dns',
+    }
+  );
 
 export interface ExternalDNSRecordProps {
   name: string;

@@ -13,9 +13,28 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "composite": true
+    "paths": {
+      "@r8s/core": ["./packages/core/src/index.ts"],
+      "@r8s/core/defaults": ["./packages/core/src/defaults.ts"],
+      "@r8s/core/jsx-runtime": ["./packages/core/src/jsx-runtime.ts"],
+      "@r8s/core/jsx-dev-runtime": ["./packages/core/src/jsx-runtime.ts"],
+      "@r8s/k8s-types": ["./packages/k8s-types/src/index.ts"],
+      "@r8s/recipes": ["./packages/recipes/src/index.ts"],
+      "@r8s/cert-manager": ["./packages/cert-manager/src/index.ts"],
+      "@r8s/vault": ["./packages/vault/src/index.ts"],
+      "@r8s/keycloak": ["./packages/keycloak/src/index.ts"],
+      "@r8s/external-dns": ["./packages/external-dns/src/index.ts"]
+    }
   },
-  "exclude": ["node_modules", "dist"]
+  "files": [],
+  "references": [
+    { "path": "./packages/k8s-types" },
+    { "path": "./packages/core" },
+    { "path": "./packages/recipes" },
+    { "path": "./packages/cert-manager" },
+    { "path": "./packages/vault" },
+    { "path": "./packages/keycloak" },
+    { "path": "./packages/external-dns" },
+    { "path": "./packages/cli" }
+  ]
 }
