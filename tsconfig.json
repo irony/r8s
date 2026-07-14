@@ -23,7 +23,10 @@
       "@r8s/cert-manager": ["./packages/cert-manager/src/index.ts"],
       "@r8s/vault": ["./packages/vault/src/index.ts"],
       "@r8s/keycloak": ["./packages/keycloak/src/index.ts"],
-      "@r8s/external-dns": ["./packages/external-dns/src/index.ts"]
+      "@r8s/external-dns": ["./packages/external-dns/src/index.ts"],
+      "@r8s/redis": ["./packages/redis/src/index.ts"],
+      "@r8s/gateway": ["./packages/gateway/src/index.ts"],
+      "@r8s/monitoring": ["./packages/monitoring/src/index.ts"]
     }
   },
   "files": [],
@@ -35,6 +38,9 @@
     { "path": "./packages/vault" },
     { "path": "./packages/keycloak" },
     { "path": "./packages/external-dns" },
+    { "path": "./packages/redis" },
+    { "path": "./packages/gateway" },
+    { "path": "./packages/monitoring" },
     { "path": "./packages/cli" }
   ]
 }
