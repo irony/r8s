@@ -1,5 +1,26 @@
 import { jsx } from '@r8s/core';
 import { ClusterIssuer, Certificate } from '@r8s/k8s-types';
+import { manifestOperator } from '@r8s/k8s-types';
+
+/** cert-manager operator declaration */
+export const certManagerOperator = (version = '1.14.0') =>
+  manifestOperator(
+    'cert-manager',
+    `https://github.com/cert-manager/cert-manager/releases/download/v${version}/cert-manager.yaml`,
+    version,
+    {
+      description: 'cert-manager for TLS certificate automation',
+      namespace: 'cert-manager',
+      crds: [
+        'certificates.cert-manager.io',
+        'certificaterequests.cert-manager.io',
+        'issuers.cert-manager.io',
+        'clusterissuers.cert-manager.io',
+        'challenges.acme.cert-manager.io',
+        'orders.acme.cert-manager.io',
+      ],
+    }
+  );
 
 export interface LetsEncryptIssuerProps {
   name: string;

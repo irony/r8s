@@ -1,5 +1,8 @@
-import { jsx } from '@r8s/core';
+import { jsx, useContext, declareOperator } from '@r8s/core';
 import { Ingress } from '@r8s/k8s-types';
+import { OperatorContext } from '@r8s/core/defaults';
+import { nginxIngressOperator } from './operators';
+import { certManagerOperator } from '@r8s/cert-manager';
 
 export interface IngressProps {
   name: string;
@@ -8,16 +11,32 @@ export interface IngressProps {
   serviceName: string;
   servicePort?: number;
   tlsSecretName?: string;
+  annotations?: Record<string, string>;
+  /** cert-manager version override */
+  certManagerVersion?: string;
+  /** nginx-ingress version override */
+  nginxIngressVersion?: string;
 }
 
 /**
- * Simple ingress with automatic TLS via cert-manager.
- * 
+ * Ingress with automatic TLS via cert-manager and explicit operator dependencies.
+ *
+ * Declares nginx-ingress and cert-manager (when TLS is enabled) as dependencies.
+ * If operators are already provided via OperatorContext, they won't be duplicated.
+ *
  * @example
- * <Ingress 
- *   name="app" 
- *   host="app.example.com" 
- *   serviceName="frontend" 
+ * <Ingress
+ *   name="app"
+ *   host="app.example.com"
+ *   serviceName="frontend"
+ * />
+ *
+ * // With TLS - also declares cert-manager dependency
+ * <Ingress
+ *   name="app"
+ *   host="app.example.com"
+ *   serviceName="frontend"
+ *   tlsSecretName="app-tls"
  * />
  */
 export function Ingress(props: IngressProps) {
@@ -28,7 +47,16 @@ export function Ingress(props: IngressProps) {
     serviceName,
     servicePort = 80,
     tlsSecretName,
+    annotations = {},
+    certManagerVersion,
+    nginxIngressVersion,
   } = props;
+
+  const sharedOperators = useContext(OperatorContext);
+
+  // Check which operators are already provided
+  const hasNginxIngress = sharedOperators.some(op => op.name === 'nginx-ingress');
+  const hasCertManager = sharedOperators.some(op => op.name === 'cert-manager');
 
   const ingress: Ingress = {
     apiVersion: 'networking.k8s.io/v1',
@@ -41,6 +69,7 @@ export function Ingress(props: IngressProps) {
         ...(tlsSecretName && {
           'cert-manager.io/cluster-issuer': 'letsencrypt-prod',
         }),
+        ...annotations,
       },
     },
     spec: {
@@ -69,5 +98,23 @@ export function Ingress(props: IngressProps) {
     },
   };
 
-  return jsx('Ingress', ingress);
+  const resources: ReturnType<typeof jsx>[] = [];
+
+  // Declare nginx-ingress operator if not already provided
+  if (!hasNginxIngress) {
+    resources.push(
+      declareOperator(nginxIngressOperator(nginxIngressVersion))
+    );
+  }
+
+  // Declare cert-manager operator if TLS is enabled and not already provided
+  if (tlsSecretName && !hasCertManager) {
+    resources.push(
+      declareOperator(certManagerOperator(certManagerVersion))
+    );
+  }
+
+  resources.push(jsx('Ingress', ingress));
+
+  return resources;
 }
