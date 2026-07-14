@@ -1,5 +1,22 @@
 import { createContext } from './context';
-import type { DatabaseConnection, SecretProvider, Operator } from '@r8s/k8s-types';
+import type { Operator } from '@r8s/k8s-types';
+
+/** Database connection info passed via context */
+export interface DatabaseConnection {
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  passwordSecret: { name: string; key: string };
+}
+
+/** Secret provider configuration */
+export interface SecretProvider {
+  backend: 'vault' | 'openbao' | 'kubernetes';
+  mount?: string;
+  path?: string;
+  authRef?: string;
+}
 
 /**
  * Default contexts for shared infrastructure properties.

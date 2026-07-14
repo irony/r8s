@@ -1,8 +1,10 @@
 import { r8sElement, Fragment, r8sProps } from './jsx-runtime';
-import { KubernetesResource } from '@r8s/k8s-types';
+import { KubernetesResource, Operator } from '@r8s/k8s-types';
+import { isOperatorDeclaration, getOperator } from './operator';
 
 export interface RenderResult {
   resources: KubernetesResource[];
+  operators: Operator[];
 }
 
 function isr8sElement(value: unknown): value is r8sElement {
@@ -26,17 +28,32 @@ function flattenChildren(children: unknown): unknown[] {
   return [children];
 }
 
-function renderChildren(children: unknown): KubernetesResource[] {
+function renderChildren(children: unknown): { resources: KubernetesResource[]; operators: Operator[] } {
   const flattened = flattenChildren(children);
-  return flattened.flatMap((child) => {
+  const resources: KubernetesResource[] = [];
+  const operators: Operator[] = [];
+
+  for (const child of flattened) {
     if (isr8sElement(child)) {
-      return renderElement(child);
+      const result = renderElement(child);
+      resources.push(...result.resources);
+      operators.push(...result.operators);
     }
-    return [];
-  });
+  }
+
+  return { resources, operators };
 }
 
-function renderElement(element: r8sElement): KubernetesResource[] {
+function renderElement(element: r8sElement): { resources: KubernetesResource[]; operators: Operator[] } {
+  // Handle operator declarations
+  if (isOperatorDeclaration(element)) {
+    const operator = getOperator(element);
+    if (operator) {
+      return { resources: [], operators: [operator] };
+    }
+    return { resources: [], operators: [] };
+  }
+
   // Handle Fragment - just render children
   if (element.type === Fragment) {
     return renderChildren(element.props.children);
@@ -57,11 +74,10 @@ function renderElement(element: r8sElement): KubernetesResource[] {
       return renderChildren(result);
     }
 
-    return [];
+    return { resources: [], operators: [] };
   }
 
   // Handle built-in Kubernetes resource components
-  // These are objects with apiVersion and kind
   if (
     typeof element.type === 'string' &&
     element.props &&
@@ -71,14 +87,24 @@ function renderElement(element: r8sElement): KubernetesResource[] {
 
     // If this is a raw Kubernetes resource (has apiVersion and kind)
     if ('apiVersion' in props && 'kind' in props) {
-      return [props as unknown as KubernetesResource];
+      return { resources: [props as unknown as KubernetesResource], operators: [] };
     }
   }
 
-  return [];
+  return { resources: [], operators: [] };
 }
 
 export function render(element: r8sElement): RenderResult {
-  const resources = renderElement(element);
-  return { resources };
+  const { resources, operators } = renderElement(element);
+  
+  // Deduplicate operators by name, keeping the last version
+  const operatorMap = new Map<string, Operator>();
+  for (const op of operators) {
+    operatorMap.set(op.name, op);
+  }
+  
+  return { 
+    resources,
+    operators: Array.from(operatorMap.values())
+  };
 }

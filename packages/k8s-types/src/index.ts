@@ -282,3 +282,6 @@ export * from './external-dns';
 export * from './vault';
 export * from './keycloak';
 export * from './cnpg';
+
+// Operator base types
+export * from './operator';

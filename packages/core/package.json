@@ -10,6 +10,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js"
     },
+    "./defaults": {
+      "types": "./dist/defaults.d.ts",
+      "import": "./dist/defaults.js",
+      "require": "./dist/defaults.js"
+    },
     "./jsx-runtime": {
       "types": "./dist/jsx-runtime.d.ts",
       "import": "./dist/jsx-runtime.js",
