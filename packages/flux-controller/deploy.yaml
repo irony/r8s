@@ -1,0 +1,105 @@
+# r8s Flux Controller - Kubernetes Deployment
+#
+# This deploys the r8s-controller as a standalone service that watches
+# a GitRepository and renders TSX to YAML.
+#
+# Alternative: Use as init-container in Flux source-controller (see README.md)
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: r8s-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: r8s-controller
+  namespace: r8s-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: r8s-controller
+rules:
+  - apiGroups: ['source.toolkit.fluxcd.io']
+    resources: ['gitrepositories']
+    verbs: ['get', 'list', 'watch']
+  - apiGroups: ['']
+    resources: ['configmaps']
+    verbs: ['get', 'list', 'create', 'update']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: r8s-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: r8s-controller
+subjects:
+  - kind: ServiceAccount
+    name: r8s-controller
+    namespace: r8s-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r8s-controller
+  namespace: r8s-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: r8s-controller
+  template:
+    metadata:
+      labels:
+        app: r8s-controller
+    spec:
+      serviceAccountName: r8s-controller
+      containers:
+        - name: controller
+          image: ghcr.io/r8s-io/flux-controller:latest
+          args:
+            - --source=/data
+            - --output=/data/rendered
+            - --verbose
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+# Example: GitRepository that the controller watches
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: r8s-manifests
+  namespace: r8s-system
+spec:
+  interval: 1m
+  url: https://github.com/your-org/your-repo
+  ref:
+    branch: main
+---
+# Example: Kustomization that applies rendered output
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: r8s-rendered
+  namespace: r8s-system
+spec:
+  interval: 10m
+  path: ./rendered
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: r8s-manifests
