@@ -12,21 +12,13 @@ export default () => (
   <App
     name="api"
     image="myapp/api:v1.2.3"
-    port={3000}
     host="api.example.com"
-    database={{ name: "api-db", storage: "20Gi" }}
-    tls={{ secretName: "api-tls", clusterIssuer: "letsencrypt" }}
   />
 );
 ```
 
 ```bash
 $ npx r8s render
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: api-db
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,11 +32,11 @@ metadata:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: api
-# ... 5 resources rendered from 1 component
+  name: api-ingress
+# ... 3 resources rendered from 1 component
 ```
 
-> **Batteries included, escape hatches included.** The `<App>` component above creates a Deployment, Service, Ingress, and Database — all wired together with sensible defaults. Prefer raw Kubernetes? Every API resource is available as a lowercase component: `<deployment>`, `<service>`, `<ingress>`, `<configmap>`, `<secret>`, `<statefulset>`, `<daemonset>`, `<job>`, `<cronjob>`, `<hpa>`, `<pdb>`, `<rbac>` — compose them exactly as you need.
+> **Batteries included, escape hatches included.** The `<App>` component above creates a Deployment, Service, and Ingress — all wired together with sensible defaults. Prefer raw Kubernetes? Every API resource is available as a lowercase component: `<deployment>`, `<service>`, `<ingress>`, `<configmap>`, `<secret>`, `<statefulset>`, `<daemonset>`, `<job>`, `<cronjob>`, `<hpa>`, `<pdb>`, `<rbac>` — compose them exactly as you need.
 
 ## Available Packages
 
@@ -196,7 +188,6 @@ export default () => (
     port={3000}
     host="myapp.example.com"
     replicas={3}
-    database={{ name: "myapp-db", storage: "20Gi" }}
     tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
     env={[
       { name: "LOG_LEVEL", value: "info" },
@@ -209,7 +200,33 @@ export default () => (
 );
 ```
 
-Need something custom? Drop down to raw components at any level:
+Need something custom? Compose with other components:
+
+```tsx
+import { App, Database } from '@r8s/recipes';
+
+export default () => (
+  <>
+    <Database name="myapp-db" storage="20Gi" />
+
+    <App
+      name="myapp"
+      namespace="production"
+      image="myapp/web:v1.2.3"
+      host="myapp.example.com"
+      tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
+      env={[
+        {
+          name: "DATABASE_URL",
+          value: "postgresql://myapp-db-rw:5432/myapp-db",
+        },
+      ]}
+    />
+  </>
+);
+```
+
+Or drop down to raw components at any level:
 
 ```tsx
 import { Database, Ingress } from '@r8s/recipes';

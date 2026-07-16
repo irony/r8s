@@ -1,102 +1,84 @@
-import { jsx, useContext } from '@r8s/core';
-import { Database } from './database';
+import { jsx } from '@r8s/core';
 import { WebService } from './web-service';
 import { Ingress } from './ingress';
-import { DatabaseContext, OperatorContext } from '@r8s/core/defaults';
+import type { TLSConfig, EnvVar } from '@r8s/k8s-types';
 
 export interface AppProps {
   name: string;
   namespace?: string;
-  domain: string;
   image: string;
   port?: number;
   replicas?: number;
-  database?: boolean;
-  tls?: boolean;
+  host: string;
+  tls?: TLSConfig;
+  env?: EnvVar[];
+  resources?: {
+    requests?: { cpu?: string; memory?: string };
+    limits?: { cpu?: string; memory?: string };
+  };
   children?: unknown;
 }
 
 /**
- * Complete application stack with composition support and explicit operators.
+ * Simple application — Deployment + Service + Ingress.
  *
- * Composes Database + WebService + Ingress into one component.
- * When database={true}, sets DatabaseContext for child components.
+ * The simplest way to deploy an app to Kubernetes:
+ * ```tsx
+ * <App name="myapp" image="myapp/web:v1.2.3" host="myapp.example.com" />
+ * ```
  *
- * Each sub-component declares its own operator dependencies, so:
- * - database=true → CNPG operator
- * - tls=true → cert-manager operator
- * - Ingress → nginx-ingress operator
- *
- * @example
- * // Standalone - auto-declares all needed operators
- * <App name="myapp" domain="myapp.example.com" image="myapp/api:v1" database={true} tls={true} />
- *
- * // With shared operators via context
- * <OperatorContext.Provider value={[cnpgOperator('1.22.5'), certManagerOperator('1.14.0')]}>
- *   <App name="myapp" domain="myapp.example.com" image="myapp/api:v1" database={true} tls={true} />
- * </OperatorContext.Provider>
- *
- * // With children that need database access
- * <App name="api" domain="api.example.com" image="myapp/api:v1" database={true}>
- *   <AnalyticsWorker />
- * </App>
+ * Compose with other components for more complex setups:
+ * ```tsx
+ * <>
+ *   <Database name="myapp-db" storage="20Gi" />
+ *   <App name="myapp" image="myapp/web:v1.2.3" host="myapp.example.com" tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}>
+ *     <BackgroundWorker name="myapp-worker" image="myapp/worker:v1.2.3" />
+ *   </App>
+ * </>
+ * ```
  */
 export function App(props: AppProps) {
   const {
     name,
     namespace = 'default',
-    domain,
     image,
     port = 3000,
     replicas = 2,
-    database = false,
-    tls = false,
+    host,
+    tls,
+    env = [],
+    resources,
     children,
   } = props;
 
-  const resources: ReturnType<typeof jsx>[] = [];
+  const elements: ReturnType<typeof jsx>[] = [];
 
-  if (database) {
-    resources.push(
-      jsx(Database, { name: `${name}-db`, namespace, storage: '10Gi' })
-    );
-  }
-
-  resources.push(
+  elements.push(
     jsx(WebService, {
       name,
       namespace,
       image,
       port,
       replicas,
-      env: database ? [
-        {
-          name: 'DATABASE_URL',
-          valueFrom: {
-            secretKeyRef: {
-              name: `${name}-db-credentials`,
-              key: 'uri',
-            },
-          },
-        },
-      ] : [],
+      env,
+      resources,
     })
   );
 
-  resources.push(
+  elements.push(
     jsx(Ingress, {
       name: `${name}-ingress`,
       namespace,
-      host: domain,
+      host,
       serviceName: name,
       servicePort: 80,
-      ...(tls && { tlsSecretName: `${name}-tls` }),
+      tls,
     })
   );
 
   if (children) {
-    resources.push(jsx('Fragment', { children }));
+    elements.push(jsx('Fragment', { children }));
   }
 
-  return resources;
+  return elements;
 }

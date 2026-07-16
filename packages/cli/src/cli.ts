@@ -269,58 +269,15 @@ function generateBasicTemplate(strategy: string): string {
     ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
     : '';
 
-  return `${fluxComment}import { Database, Ingress } from '@r8s/recipes';
+  return `${fluxComment}import { App } from '@r8s/recipes';
 
-export default function App() {
-  return (
-    <>
-      <Database
-        name="app-db"
-        namespace="default"
-        storage="10Gi"
-      />
-
-      <deployment
-        apiVersion="apps/v1"
-        kind="Deployment"
-        metadata={{ name: 'app', labels: { app: 'app' } }}
-        spec={{
-          replicas: 2,
-          selector: { matchLabels: { app: 'app' } },
-          template: {
-            metadata: { labels: { app: 'app' } },
-            spec: {
-              containers: [{
-                name: 'app',
-                image: 'myapp/app:latest',
-                ports: [{ containerPort: 3000 }],
-              }],
-            },
-          },
-        }}
-      />
-
-      <service
-        apiVersion="v1"
-        kind="Service"
-        metadata={{ name: 'app' }}
-        spec={{
-          type: 'ClusterIP',
-          selector: { app: 'app' },
-          ports: [{ port: 80, targetPort: 3000 }],
-        }}
-      />
-
-      <Ingress
-        name="app-ingress"
-        host="app.example.com"
-        serviceName="app"
-        servicePort={80}
-        tls={{ secretName: 'app-tls', clusterIssuer: 'letsencrypt' }}
-      />
-    </>
-  );
-}
+export default () => (
+  <App
+    name="myapp"
+    image="myapp/web:v1.2.3"
+    host="myapp.example.com"
+  />
+);
 `;
 }
 
@@ -329,94 +286,43 @@ function generateFullstackTemplate(strategy: string): string {
     ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
     : '';
 
-  return `${fluxComment}import { Database, Ingress } from '@r8s/recipes';
+  return `${fluxComment}import { App, Database } from '@r8s/recipes';
 
-export default function App() {
-  return (
-    <>
-      {/* Database */}
-      <Database
-        name="app-db"
-        namespace="production"
-        storage="10Gi"
-      />
+export default () => (
+  <>
+    <Database
+      name="app-db"
+      namespace="production"
+      storage="10Gi"
+    />
 
-      {/* Backend API */}
-      <deployment
-        apiVersion="apps/v1"
-        kind="Deployment"
-        metadata={{ name: 'api', namespace: 'production', labels: { app: 'api' } }}
-        spec={{
-          replicas: 3,
-          selector: { matchLabels: { app: 'api' } },
-          template: {
-            metadata: { labels: { app: 'api' } },
-            spec: {
-              containers: [{
-                name: 'api',
-                image: 'myapp/api:latest',
-                ports: [{ containerPort: 3000 }],
-              }],
-            },
-          },
-        }}
-      />
+    <App
+      name="api"
+      namespace="production"
+      image="myapp/api:v1.2.3"
+      port={3000}
+      host="api.example.com"
+      replicas={3}
+      tls={{ secretName: 'api-tls', clusterIssuer: 'letsencrypt' }}
+      env={[
+        {
+          name: 'DATABASE_URL',
+          value: 'postgresql://app-db-rw:5432/app-db',
+        },
+      ]}
+    />
 
-      <service
-        apiVersion="v1"
-        kind="Service"
-        metadata={{ name: 'api', namespace: 'production' }}
-        spec={{
-          type: 'ClusterIP',
-          selector: { app: 'api' },
-          ports: [{ port: 80, targetPort: 3000 }],
-        }}
-      />
-
-      {/* Frontend */}
-      <deployment
-        apiVersion="apps/v1"
-        kind="Deployment"
-        metadata={{ name: 'frontend', namespace: 'production', labels: { app: 'frontend' } }}
-        spec={{
-          replicas: 2,
-          selector: { matchLabels: { app: 'frontend' } },
-          template: {
-            metadata: { labels: { app: 'frontend' } },
-            spec: {
-              containers: [{
-                name: 'frontend',
-                image: 'myapp/frontend:latest',
-                ports: [{ containerPort: 80 }],
-              }],
-            },
-          },
-        }}
-      />
-
-      <service
-        apiVersion="v1"
-        kind="Service"
-        metadata={{ name: 'frontend', namespace: 'production' }}
-        spec={{
-          type: 'ClusterIP',
-          selector: { app: 'frontend' },
-          ports: [{ port: 80, targetPort: 80 }],
-        }}
-      />
-
-      {/* Ingress */}
-      <Ingress
-        name="app-ingress"
-        namespace="production"
-        host="app.example.com"
-        serviceName="frontend"
-        servicePort={80}
-        tls={{ secretName: 'app-tls', clusterIssuer: 'letsencrypt' }}
-      />
-    </>
-  );
-}
+    <App
+      name="frontend"
+      namespace="production"
+      image="myapp/frontend:v1.2.3"
+      port={80}
+      host="app.example.com"
+      replicas={2}
+      tls={{ secretName: 'app-tls', clusterIssuer: 'letsencrypt' }}
+    />
+  </>
+);
 `;
 }
 
