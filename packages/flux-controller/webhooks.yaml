@@ -1,0 +1,79 @@
+# r8s FluxCD Webhook Configuration
+#
+# This configures FluxCD to receive webhooks from Git providers
+# instead of polling, enabling instant updates when you push.
+#
+# Supported providers: GitHub, GitLab, Bitbucket, Harbor, etc.
+
+---
+# 1. Receiver - Tells Flux to listen for webhooks
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: r8s-github-webhook
+  namespace: flux-system
+spec:
+  type: github
+  events:
+    - ping
+    - push
+  secretRef:
+    name: r8s-webhook-token
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      name: r8s-manifests
+      namespace: flux-system
+---
+# 2. Secret - Webhook token (must match GitHub/GitLab secret)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: r8s-webhook-token
+  namespace: flux-system
+type: Opaque
+stringData:
+  token: "your-webhook-secret-here"
+---
+# 3. Alert - Notify on reconciliation failures
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: r8s-reconciliation-alerts
+  namespace: flux-system
+spec:
+  providerRef:
+    name: slack-provider
+  eventSources:
+    - kind: Kustomization
+      name: r8s-rendered
+      namespace: flux-system
+    - kind: GitRepository
+      name: r8s-manifests
+      namespace: flux-system
+  eventSeverity: error
+  inclusionList:
+    - "reconciliation failed"
+    - "render failed"
+---
+# 4. Provider - Where to send alerts (Slack example)
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: slack-provider
+  namespace: flux-system
+spec:
+  type: slack
+  channel: kubernetes-alerts
+  secretRef:
+    name: slack-webhook-url
+---
+# 5. Secret - Slack webhook URL
+apiVersion: v1
+kind: Secret
+metadata:
+  name: slack-webhook-url
+  namespace: flux-system
+type: Opaque
+stringData:
+  address: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"

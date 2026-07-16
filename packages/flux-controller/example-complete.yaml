@@ -1,0 +1,188 @@
+# Complete r8s + FluxCD + Webhooks Example
+#
+# This example shows a complete setup for a production-ready
+# r8s + FluxCD deployment with webhooks and notifications.
+
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: r8s-production
+---
+# GitRepository with 1m polling (webhook will trigger instant sync)
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: r8s-manifests
+  namespace: r8s-production
+spec:
+  interval: 1m
+  url: https://github.com/your-org/infrastructure
+  ref:
+    branch: main
+  ignore: |
+    # Ignore everything except k8s directory
+    /*
+    !/k8s/
+---
+# Kustomization that applies rendered output
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: r8s-rendered
+  namespace: r8s-production
+spec:
+  interval: 10m
+  path: ./k8s/rendered
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: r8s-manifests
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: web
+      namespace: production
+  timeout: 5m
+---
+# GitRepository for the r8s-controller itself (self-healing)
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: r8s-controller
+  namespace: r8s-production
+spec:
+  interval: 10m
+  url: https://github.com/r8s-io/r8s
+  ref:
+    branch: main
+---
+# Kustomization for r8s-controller deployment
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: r8s-controller
+  namespace: r8s-production
+spec:
+  interval: 10m
+  path: ./packages/flux-controller
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: r8s-controller
+---
+# Webhook Receiver for instant sync
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: r8s-github-push
+  namespace: r8s-production
+spec:
+  type: github
+  events:
+    - ping
+    - push
+  secretRef:
+    name: github-webhook-token
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      name: r8s-manifests
+      namespace: r8s-production
+---
+# Webhook secret (replace with your actual secret)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-webhook-token
+  namespace: r8s-production
+type: Opaque
+stringData:
+  token: "replace-me-with-20-char-random-string"
+---
+# Slack notifications for failures
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: slack
+  namespace: r8s-production
+spec:
+  type: slack
+  channel: kubernetes-alerts
+  secretRef:
+    name: slack-webhook
+---
+# Slack webhook secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: slack-webhook
+  namespace: r8s-production
+type: Opaque
+stringData:
+  address: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+---
+# Alert for r8s failures
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: r8s-failures
+  namespace: r8s-production
+spec:
+  providerRef:
+    name: slack
+  eventSources:
+    - kind: Kustomization
+      name: r8s-rendered
+      namespace: r8s-production
+    - kind: Kustomization
+      name: r8s-controller
+      namespace: r8s-production
+  eventSeverity: error
+  inclusionList:
+    - "reconciliation failed"
+    - ".*render.*failed.*"
+---
+# Ingress for webhook endpoint
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flux-webhook
+  namespace: r8s-production
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - flux-webhook.yourdomain.com
+      secretName: flux-webhook-tls
+  rules:
+    - host: flux-webhook.yourdomain.com
+      http:
+        paths:
+          - path: /hook/
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-controller
+                port:
+                  number: 80
+---
+# Cluster variables for substitution
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-vars
+  namespace: r8s-production
+data:
+  cluster_name: "production"
+  domain: "example.com"
+  environment: "prod"
+  region: "eu-north-1"
