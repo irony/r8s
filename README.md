@@ -33,7 +33,7 @@ export default () => (
     <Ingress
       host="api.example.com"
       serviceName="api"
-      tlsSecretName="api-tls"
+      tls={{ secretName: "api-tls", clusterIssuer: "letsencrypt" }}
     />
   </>
 );
@@ -53,6 +53,23 @@ metadata:
 ---
 # ... 4 resources rendered from 1 file
 ```
+
+## Available Packages
+
+| Package | Description | Operators |
+|---------|-------------|-----------|
+| `@r8s/recipes` | Pre-built components (Database, Ingress, App) | cnpg, nginx-ingress |
+| `@r8s/cert-manager` | TLS certificates | cert-manager |
+| `@r8s/vault` | Secret management | vault-secrets-operator |
+| `@r8s/keycloak` | Identity management | keycloak-operator |
+| `@r8s/external-dns` | DNS management | external-dns |
+| `@r8s/redis` | Redis clusters | redis-operator |
+| `@r8s/gateway` | Envoy Gateway (Gateway API) | envoy-gateway |
+| `@r8s/monitoring` | Prometheus stack | kube-prometheus-stack |
+| `@r8s/clickhouse` | ClickHouse database | clickhouse-operator |
+| `@r8s/logging` | Log aggregation (Banzai Cloud) | logging-operator |
+| `@r8s/loki` | Grafana Loki | loki |
+| `@r8s/flux-controller` | FluxCD source controller | — |
 
 ## The Problem
 
@@ -591,6 +608,79 @@ export default () => (
 
 See the [`examples/`](./examples) directory for complete working examples.
 
+## Validation
+
+r8s includes built-in validation with helpful error messages:
+
+```tsx
+import { render, validateResource, checkDuplicates } from '@r8s/core';
+
+const result = render(<MyApp />);
+
+// Validate all resources
+const errors = result.resources.flatMap(validateResource);
+const duplicates = checkDuplicates(result.resources);
+
+if (errors.length > 0) {
+  console.error(errors[0].message);      // "Ingress 'api' is missing spec.rules"
+  console.error(errors[0].suggestion);   // "Add at least one rule with host and backend service"
+}
+```
+
+**Validators:** `validateResource`, `validateIngress`, `validateService`, `validateDeployment`, `validateOperator`, `checkDuplicates`
+
+**Error format:** `{ code, message, resource, field, suggestion }`
+
+## FluxCD Integration
+
+### Option 1: r8s-controller (in-cluster rendering)
+
+Push `.tsx` files directly to git — no CI build step needed:
+
+```yaml
+# Flux GitRepository clones your repo
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: r8s-manifests
+spec:
+  interval: 1m
+  url: https://github.com/your-org/your-repo
+---
+# r8s-controller renders TSX → YAML as init container
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: r8s-rendered
+spec:
+  path: ./rendered
+  sourceRef:
+    kind: GitRepository
+    name: r8s-manifests
+```
+
+### Option 2: Webhooks (instant sync)
+
+Get instant reconciliation when you push:
+
+```yaml
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: r8s-github-webhook
+spec:
+  type: github
+  events: [push]
+  secretRef:
+    name: r8s-webhook-token
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      name: r8s-manifests
+```
+
+See [`packages/flux-controller/`](./packages/flux-controller) for complete setup.
+
 ## GitHub Actions
 
 r8s includes a GitHub Actions workflow that automatically renders your Kubernetes manifests on every push. When you run `r8s init`, it creates `.github/workflows/render.yaml`:
@@ -692,17 +782,28 @@ npx r8s render
 ```
 r8s/
 ├── packages/
-│   ├── k8s-types/      # TypeScript interfaces from K8s OpenAPI + Operator types
-│   ├── core/           # JSX factory + renderer + context system
-│   ├── cli/            # Command-line tool
-│   └── recipes/        # Pre-built component library
+│   ├── k8s-types/          # TypeScript interfaces + shared routing abstractions
+│   ├── core/               # JSX factory, renderer, context, validation
+│   ├── cli/                # Command-line tool
+│   ├── recipes/            # Pre-built components (Database, Ingress, App)
+│   ├── cert-manager/       # TLS certificate components
+│   ├── vault/              # Secret management components
+│   ├── keycloak/           # Identity management components
+│   ├── external-dns/       # DNS management components
+│   ├── redis/              # Redis Operator components
+│   ├── gateway/            # Envoy Gateway (Gateway API) components
+│   ├── monitoring/         # Prometheus stack components
+│   ├── clickhouse/         # ClickHouse Operator components
+│   ├── logging/            # Logging Operator components
+│   ├── loki/               # Grafana Loki components
+│   └── flux-controller/    # FluxCD source controller for in-cluster rendering
 ├── examples/
-│   ├── basic-app/      # Simple app + database
-│   ├── simple-app/     # One-liner App component
-│   ├── operators-demo/ # Platform with Vault, Keycloak, cert-manager
-│   ├── microservices/  # E-commerce platform
-│   └── fluxcd/         # Staging + production overlays
-└── docs/               # Documentation site
+│   ├── basic-app/          # Simple app + database
+│   ├── simple-app/         # One-liner App component
+│   ├── operators-demo/     # Platform with Vault, Keycloak, cert-manager
+│   ├── microservices/      # E-commerce platform
+│   └── fluxcd/             # Staging + production overlays
+└── docs/                   # Documentation site (Vike + React)
 ```
 
 ## Roadmap
@@ -712,8 +813,12 @@ r8s/
 - [x] GitHub Actions workflow for auto-render
 - [x] **Operator dependency tracking** — explicit, type-safe operator declarations
 - [x] **Context system** — Namespace, Labels, OperatorContext for composition
-- [ ] More recipes: Redis, Kafka, RabbitMQ, S3 buckets
-- [ ] `r8s search` — search recipe registry
+- [x] **Package-local operators** — each package exports its own operator
+- [x] **Shared routing interfaces** — RouteTarget, TLSConfig, BaseRouteProps
+- [x] **Validation** — helpful error messages with suggestions
+- [x] **FluxCD controller** — in-cluster TSX rendering
+- [x] **FluxCD webhooks** — instant sync on git push
+- [x] **New operators** — Redis, Gateway, Monitoring, ClickHouse, Logging, Loki
 - [ ] Watch mode for development
 - [ ] Diff view between renders
 - [ ] Helm chart generation from components
