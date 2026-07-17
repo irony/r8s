@@ -144,7 +144,12 @@ export function WebService(props: WebServiceProps) {
   if (dbContext && !envVars.some(e => e.name === 'DATABASE_URL')) {
     envVars.push({
       name: 'DATABASE_URL',
-      value: `postgresql://${dbContext.username}:${dbContext.passwordSecret.key}@${dbContext.host}:${dbContext.port}/${dbContext.database}`,
+      valueFrom: {
+        secretKeyRef: {
+          name: dbContext.passwordSecret.name,
+          key: 'uri',
+        },
+      },
     });
   }
 

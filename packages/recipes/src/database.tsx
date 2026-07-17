@@ -54,33 +54,90 @@ export function Database(props: DatabaseProps) {
 
   if (clusterConfig) {
     // Running inside a shared cluster - create database only
-    const clusterName = clusterConfig.name;
-    
-    // Create initdb job or use postInitSQLRefs to create database
-    // For now, we rely on the cluster's bootstrap and use the connection
     const connection = {
       host: clusterConfig.host,
       port: 5432,
       database: name,
-      user: name,
+      username: name,
       passwordSecret: { name: secretName, key: 'password' },
       passwordKey: 'password',
       vendor: 'postgres' as const,
     };
 
-    // Create secret for this database
-    resources.push(
-      jsx('Secret', {
-        apiVersion: 'v1',
-        kind: 'Secret',
-        metadata: { name: secretName, namespace },
-        stringData: {
-          password: `${name}-password`,
-          username: name,
-          uri: `postgresql://${name}:${name}-password@${clusterConfig.host}:5432/${name}`,
-        },
-      })
-    );
+    // Create secret for this database (respect SecretContext)
+    if (secretProvider) {
+      switch (secretProvider.backend) {
+        case 'vault':
+          resources.push(
+            jsx('VaultStaticSecret', {
+              apiVersion: 'secrets.hashicorp.com/v1beta1',
+              kind: 'VaultStaticSecret',
+              metadata: { name: `${name}-db-secret`, namespace },
+              spec: {
+                vaultAuthRef: secretProvider.authRef,
+                mount: secretProvider.mount,
+                type: 'kv-v2',
+                path: `${secretProvider.path}/${name}`,
+                destination: {
+                  create: true,
+                  name: secretName,
+                },
+              },
+            })
+          );
+          break;
+
+        case 'openbao':
+          resources.push(
+            jsx('OpenBaoStaticSecret', {
+              apiVersion: 'secrets.openbao.org/v1beta1',
+              kind: 'OpenBaoStaticSecret',
+              metadata: { name: `${name}-db-secret`, namespace },
+              spec: {
+                openbaoAuthRef: secretProvider.authRef,
+                mount: secretProvider.mount,
+                type: 'kv-v2',
+                path: `${secretProvider.path}/${name}`,
+                destination: {
+                  create: true,
+                  name: secretName,
+                },
+              },
+            })
+          );
+          break;
+
+        case 'kubernetes':
+          // Fall through to plain Secret
+        default:
+          resources.push(
+            jsx('Secret', {
+              apiVersion: 'v1',
+              kind: 'Secret',
+              metadata: { name: secretName, namespace },
+              stringData: {
+                password: `${name}-password`,
+                username: name,
+                uri: `postgresql://${name}:${name}-password@${clusterConfig.host}:5432/${name}`,
+              },
+            })
+          );
+      }
+    } else {
+      // No SecretContext - create plain Secret
+      resources.push(
+        jsx('Secret', {
+          apiVersion: 'v1',
+          kind: 'Secret',
+          metadata: { name: secretName, namespace },
+          stringData: {
+            password: `${name}-password`,
+            username: name,
+            uri: `postgresql://${name}:${name}-password@${clusterConfig.host}:5432/${name}`,
+          },
+        })
+      );
+    }
 
     if (children) {
       resources.push(
@@ -122,7 +179,7 @@ export function Database(props: DatabaseProps) {
       host: `${name}-rw`,
       port: 5432,
       database: name,
-      user: name,
+      username: name,
       passwordSecret: { name: secretName, key: 'password' },
       passwordKey: 'password',
       vendor: 'postgres' as const,

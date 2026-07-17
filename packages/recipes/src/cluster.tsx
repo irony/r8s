@@ -1,5 +1,5 @@
 import { jsx, useContext, declareOperator } from '@r8s/core';
-import { Cluster } from '@r8s/k8s-types';
+import type { Cluster as ClusterType } from '@r8s/k8s-types';
 import { ClusterContext, OperatorContext } from '@r8s/core/defaults';
 import { cnpgOperator } from './operators';
 
@@ -42,7 +42,7 @@ export function Cluster(props: ClusterProps) {
 
   const secretName = `${name}-db-credentials`;
 
-  const cluster: Cluster = {
+  const cluster: ClusterType = {
     apiVersion: 'postgresql.cnpg.io/v1',
     kind: 'Cluster',
     metadata: { name, namespace },
