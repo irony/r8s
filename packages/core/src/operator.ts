@@ -31,13 +31,20 @@ export function declareOperator(operator: Operator): r8sElement {
   } as unknown as r8sElement;
 }
 
-/** Check if an element is an operator declaration */
-export function isOperatorDeclaration(element: r8sElement): boolean {
-  return typeof element.type === 'symbol' && element.type === OPERATOR_SYMBOL;
+/** Check if a value is an operator declaration */
+export function isOperatorDeclaration(element: unknown): boolean {
+  if (!element || typeof element !== 'object') return false;
+  return (
+    'type' in element &&
+    typeof (element as Record<string, unknown>).type === 'symbol' &&
+    (element as Record<string, unknown>).type === OPERATOR_SYMBOL
+  );
 }
 
 /** Extract operator from declaration element */
-export function getOperator(element: r8sElement): Operator | null {
+export function getOperator(element: unknown): Operator | null {
   if (!isOperatorDeclaration(element)) return null;
-  return (element.props as { operator: Operator }).operator;
+  const props = (element as Record<string, unknown>).props;
+  if (!props || typeof props !== 'object') return null;
+  return (props as { operator?: Operator }).operator || null;
 }

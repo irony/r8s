@@ -164,7 +164,7 @@ describe('Ingress Recipe', () => {
       name: 'test-ingress',
       host: 'test.example.com',
       serviceName: 'test-svc',
-      tls: { secretName: 'test-tls' },
+      tls: { secretName: 'test-tls', clusterIssuer: 'letsencrypt' },
     });
 
     const result = render(element);
