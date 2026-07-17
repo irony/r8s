@@ -80,7 +80,7 @@ export function Database(props: DatabaseProps) {
     port: 5432,
     database: name,
     user: name,
-    passwordSecret: secretName,
+    passwordSecret: { name: secretName, key: 'password' },
     passwordKey: 'password',
     vendor: 'postgres' as const,
   };

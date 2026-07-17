@@ -189,9 +189,8 @@ export default () => (
     host="myapp.example.com"
     replicas={3}
     tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
-    env={[
-      { name: "LOG_LEVEL", value: "info" },
-    ]}
+    env={{ LOG_LEVEL: 'info' }}
+    secrets={{ DATABASE_URL: 'app-secrets' }}
     resources={{
       requests: { cpu: "100m", memory: "128Mi" },
       limits: { cpu: "500m", memory: "512Mi" },
@@ -215,12 +214,8 @@ export default () => (
       image="myapp/web:v1.2.3"
       host="myapp.example.com"
       tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
-      env={[
-        {
-          name: "DATABASE_URL",
-          value: "postgresql://myapp-db-rw:5432/myapp-db",
-        },
-      ]}
+      env={{ LOG_LEVEL: 'info' }}
+      secrets={{ DATABASE_URL: 'app-secrets' }}
     />
   </>
 );

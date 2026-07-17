@@ -1,10 +1,21 @@
 import { r8sElement, Fragment, r8sProps } from './jsx-runtime';
 import { KubernetesResource, Operator } from '@r8s/k8s-types';
 import { isOperatorDeclaration, getOperator } from './operator';
+import { Context } from './context';
 
 export interface RenderResult {
   resources: KubernetesResource[];
   operators: Operator[];
+}
+
+// Active context values during rendering
+const contextStack = new Map<symbol, unknown>();
+
+export function useContext<T>(context: Context<T>): T {
+  if (contextStack.has(context._contextId)) {
+    return contextStack.get(context._contextId) as T;
+  }
+  return context._defaultValue;
 }
 
 function isr8sElement(value: unknown): value is r8sElement {
@@ -59,10 +70,44 @@ function renderElement(element: r8sElement): { resources: KubernetesResource[]; 
     return renderChildren(element.props.children);
   }
 
+  // Handle context providers
+  if (element.type === Symbol.for('r8s.context.provider')) {
+    const { contextId, value, children } = element.props as {
+      contextId: symbol;
+      value: unknown;
+      children?: unknown;
+    };
+    
+    // Push context value
+    const hadPreviousValue = contextStack.has(contextId);
+    const previousValue = contextStack.get(contextId);
+    contextStack.set(contextId, value);
+    
+    // Render children with new context
+    const result = renderChildren(children);
+    
+    // If the context value contains operators, include them
+    if (Array.isArray(value)) {
+      const ops = value.filter((v): v is Operator => 
+        v && typeof v === 'object' && 'name' in v && 'source' in v
+      );
+      result.operators.unshift(...ops);
+    }
+    
+    // Restore previous context
+    if (hadPreviousValue) {
+      contextStack.set(contextId, previousValue);
+    } else {
+      contextStack.delete(contextId);
+    }
+    
+    return result;
+  }
+
   // Handle function components
   if (typeof element.type === 'function') {
     const componentFn = element.type as Function;
-    const { children, ...props } = element.props;
+    const props = element.props;
 
     const result = componentFn(props);
 
@@ -95,6 +140,9 @@ function renderElement(element: r8sElement): { resources: KubernetesResource[]; 
 }
 
 export function render(element: r8sElement): RenderResult {
+  // Clear context stack before rendering
+  contextStack.clear();
+  
   const { resources, operators } = renderElement(element);
   
   // Deduplicate operators by name, keeping the last version
