@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { jsx, Fragment, render } from '../src/index';
+import { jsx, Fragment, render, useContext } from '../src/index';
 import { declareOperator } from '../src/operator';
-import { useContext } from '../src/context';
 import { OperatorContext } from '../src/defaults';
 import { manifestOperator, helmOperator, olmOperator } from '@r8s/k8s-types';
 

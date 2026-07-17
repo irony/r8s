@@ -1,12 +1,8 @@
-import { jsx } from './jsx-runtime';
-
 export interface Context<T> {
   Provider: (props: { value: T; children?: unknown }) => unknown;
   _defaultValue: T;
   _contextId: symbol;
 }
-
-const contextMap = new WeakMap<object, Map<symbol, unknown>>();
 
 export function createContext<T>(defaultValue: T): Context<T> {
   const contextId = Symbol('r8s.context');
@@ -22,10 +18,4 @@ export function createContext<T>(defaultValue: T): Context<T> {
     _defaultValue: defaultValue,
     _contextId: contextId,
   };
-}
-
-export function useContext<T>(context: Context<T>): T {
-  // This is a simplified version - in the real renderer,
-  // context values are looked up from the component tree
-  return context._defaultValue;
 }

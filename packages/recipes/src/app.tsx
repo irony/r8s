@@ -1,7 +1,7 @@
 import { jsx } from '@r8s/core';
-import { WebService } from './web-service';
+import { WebService, type SecretRef, type VaultSecretRef } from './web-service';
 import { Ingress } from './ingress';
-import type { TLSConfig, EnvVar } from '@r8s/k8s-types';
+import type { TLSConfig } from '@r8s/k8s-types';
 
 export interface AppProps {
   name: string;
@@ -11,7 +11,12 @@ export interface AppProps {
   replicas?: number;
   host: string;
   tls?: TLSConfig;
-  env?: EnvVar[];
+  /** Plain environment variables (non-sensitive) */
+  env?: Record<string, string>;
+  /** Secrets from Kubernetes Secrets — safe by default */
+  secrets?: Record<string, SecretRef | string>;
+  /** Secrets from Vault — creates VaultStaticSecret objects */
+  vault?: Record<string, VaultSecretRef>;
   resources?: {
     requests?: { cpu?: string; memory?: string };
     limits?: { cpu?: string; memory?: string };
@@ -25,6 +30,27 @@ export interface AppProps {
  * The simplest way to deploy an app to Kubernetes:
  * ```tsx
  * <App name="myapp" image="myapp/web:v1.2.3" host="myapp.example.com" />
+ * ```
+ *
+ * With secrets from Kubernetes Secrets:
+ * ```tsx
+ * <App
+ *   name="myapp"
+ *   image="myapp/web:v1.2.3"
+ *   host="myapp.example.com"
+ *   env={{ LOG_LEVEL: 'info' }}
+ *   secrets={{ DATABASE_URL: 'app-secrets' }}
+ * />
+ * ```
+ *
+ * With Vault secrets (auto-installs Vault Secrets Operator):
+ * ```tsx
+ * <App
+ *   name="myapp"
+ *   image="myapp/web:v1.2.3"
+ *   host="myapp.example.com"
+ *   vault={{ DATABASE_URL: { mount: 'kv', path: 'db/credentials' } }}
+ * />
  * ```
  *
  * Compose with other components for more complex setups:
@@ -46,7 +72,9 @@ export function App(props: AppProps) {
     replicas = 2,
     host,
     tls,
-    env = [],
+    env = {},
+    secrets = {},
+    vault = {},
     resources,
     children,
   } = props;
@@ -61,6 +89,8 @@ export function App(props: AppProps) {
       port,
       replicas,
       env,
+      secrets,
+      vault,
       resources,
     })
   );

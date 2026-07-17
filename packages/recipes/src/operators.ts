@@ -24,3 +24,16 @@ export const nginxIngressOperator = (version = '1.15.1') =>
       namespace: 'ingress-nginx',
     }
   );
+
+/** Vault Secrets Operator declaration */
+export const vaultSecretsOperator = (version = '0.5.0') =>
+  manifestOperator(
+    'vault-secrets-operator',
+    `https://raw.githubusercontent.com/hashicorp/vault-secrets-operator/v${version}/config/default/deploy.yaml`,
+    version,
+    {
+      description: 'HashiCorp Vault Secrets Operator',
+      namespace: 'vault-secrets-operator',
+      crds: ['vaultstaticsecrets.secrets.hashicorp.com', 'vaultauths.secrets.hashicorp.com'],
+    }
+  );

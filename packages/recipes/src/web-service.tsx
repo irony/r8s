@@ -1,5 +1,23 @@
-import { jsx } from '@r8s/core';
+import { jsx, declareOperator, useContext } from '@r8s/core';
 import { Deployment, Service, EnvVar } from '@r8s/k8s-types';
+import { OperatorContext } from '@r8s/core/defaults';
+import { vaultSecretsOperator } from './operators';
+
+export interface SecretRef {
+  /** Name of the Kubernetes Secret containing this value */
+  secret: string;
+  /** Key within the secret (defaults to env var name) */
+  key?: string;
+}
+
+export interface VaultSecretRef {
+  /** Vault KV mount path */
+  mount: string;
+  /** Secret path in Vault */
+  path: string;
+  /** Key within the Vault secret (defaults to env var name) */
+  key?: string;
+}
 
 export interface WebServiceProps {
   name: string;
@@ -7,8 +25,14 @@ export interface WebServiceProps {
   image: string;
   port?: number;
   replicas?: number;
-  env?: EnvVar[];
-  envFrom?: Array<{ secretRef?: { name: string } }>;
+  /** Plain environment variables (non-sensitive) */
+  env?: Record<string, string>;
+  /** Secrets from Kubernetes Secrets — safe by default */
+  secrets?: Record<string, SecretRef | string>;
+  /** Secrets from Vault — creates VaultStaticSecret objects */
+  vault?: Record<string, VaultSecretRef>;
+  /** Raw env vars for advanced use cases */
+  rawEnv?: EnvVar[];
   resources?: {
     requests?: { cpu?: string; memory?: string };
     limits?: { cpu?: string; memory?: string };
@@ -17,16 +41,27 @@ export interface WebServiceProps {
 
 /**
  * Simple web service (backend or frontend).
- * 
+ *
  * Creates a Deployment + Service with health checks.
- * 
+ *
  * @example
- * <WebService name="api" image="myapp/api:v1" port={3000} />
- * <WebService 
- *   name="web" 
- *   image="myapp/web:v1" 
- *   port={80}
- *   envFrom={[{ secretRef: { name: 'app-secrets' } }]}
+ * // Plain env vars
+ * <WebService name="api" image="myapp/api:v1" port={3000} env={{ LOG_LEVEL: 'info' }} />
+ *
+ * // With secrets from Kubernetes Secrets
+ * <WebService
+ *   name="api"
+ *   image="myapp/api:v1"
+ *   env={{ LOG_LEVEL: 'info' }}
+ *   secrets={{ DATABASE_URL: 'app-secrets', API_KEY: 'app-secrets' }}
+ * />
+ *
+ * // With Vault secrets (creates VaultStaticSecret objects)
+ * <WebService
+ *   name="api"
+ *   image="myapp/api:v1"
+ *   env={{ LOG_LEVEL: 'info' }}
+ *   vault={{ DATABASE_URL: { mount: 'kv', path: 'db/credentials' } }}
  * />
  */
 export function WebService(props: WebServiceProps) {
@@ -36,10 +71,82 @@ export function WebService(props: WebServiceProps) {
     image,
     port = 3000,
     replicas = 2,
-    env = [],
-    envFrom = [],
+    env = {},
+    secrets = {},
+    vault = {},
+    rawEnv = [],
     resources,
   } = props;
+
+  const envVars: EnvVar[] = [];
+  const envFrom: Array<{ secretRef: { name: string } }> = [];
+  const vaultResources: ReturnType<typeof jsx>[] = [];
+
+  // Plain env vars
+  for (const [key, value] of Object.entries(env)) {
+    envVars.push({ name: key, value });
+  }
+
+  // Secrets from Kubernetes Secrets
+  const secretNames = new Set<string>();
+  for (const [envName, ref] of Object.entries(secrets)) {
+    if (typeof ref === 'string') {
+      // Simple string: secret name, key = env name
+      envVars.push({
+        name: envName,
+        valueFrom: { secretKeyRef: { name: ref, key: envName } },
+      });
+      secretNames.add(ref);
+    } else {
+      // Object with explicit secret/key
+      envVars.push({
+        name: envName,
+        valueFrom: { secretKeyRef: { name: ref.secret, key: ref.key || envName } },
+      });
+      secretNames.add(ref.secret);
+    }
+  }
+
+  // Vault secrets — create VaultStaticSecret objects
+  for (const [envName, ref] of Object.entries(vault)) {
+    const secretName = `${name}-${envName.toLowerCase().replace(/_/g, '-')}-vault`;
+    
+    // Create VaultStaticSecret
+    vaultResources.push(
+      jsx('VaultStaticSecret', {
+        apiVersion: 'secrets.hashicorp.com/v1beta1',
+        kind: 'VaultStaticSecret',
+        metadata: { name: secretName, namespace },
+        spec: {
+          mount: ref.mount,
+          type: 'kv-v2',
+          path: ref.path,
+          destination: {
+            create: true,
+            name: secretName,
+          },
+        },
+      })
+    );
+
+    // Reference the generated secret
+    envVars.push({
+      name: envName,
+      valueFrom: { secretKeyRef: { name: secretName, key: ref.key || envName } },
+    });
+  }
+
+  // Raw env vars (advanced)
+  envVars.push(...rawEnv);
+
+  // Declare Vault Secrets Operator if vault secrets are used
+  if (Object.keys(vault).length > 0) {
+    const sharedOperators = useContext(OperatorContext);
+    const hasVSO = sharedOperators.some(op => op.name === 'vault-secrets-operator');
+    if (!hasVSO) {
+      vaultResources.push(declareOperator(vaultSecretsOperator()));
+    }
+  }
 
   const deployment: Deployment = {
     apiVersion: 'apps/v1',
@@ -55,7 +162,7 @@ export function WebService(props: WebServiceProps) {
             name: 'app',
             image,
             ports: [{ containerPort: port }],
-            env,
+            env: envVars,
             ...(envFrom.length > 0 && { envFrom }),
             ...(resources && { resources }),
             livenessProbe: {
@@ -86,6 +193,7 @@ export function WebService(props: WebServiceProps) {
   };
 
   return [
+    ...vaultResources,
     jsx('Deployment', deployment),
     jsx('Service', service),
   ];
