@@ -32,7 +32,8 @@ export function declareOperator(operator: Operator): r8sElement {
 }
 
 /** Check if an element is an operator declaration */
-export function isOperatorDeclaration(element: r8sElement): boolean {
+export function isOperatorDeclaration(element: r8sElement | null | undefined): boolean {
+  if (!element || typeof element !== 'object') return false;
   return (
     typeof element.type === 'symbol' &&
     element.type === OPERATOR_SYMBOL
@@ -40,7 +41,7 @@ export function isOperatorDeclaration(element: r8sElement): boolean {
 }
 
 /** Extract operator from declaration element */
-export function getOperator(element: r8sElement): Operator | null {
+export function getOperator(element: r8sElement | null | undefined): Operator | null {
   if (!isOperatorDeclaration(element)) return null;
-  return (element.props as { operator: Operator }).operator;
+  return (element!.props as { operator?: Operator }).operator || null;
 }
