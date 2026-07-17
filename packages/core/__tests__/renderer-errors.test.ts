@@ -148,8 +148,8 @@ describe('Renderer Error Cases', () => {
   });
 
   it('should deduplicate operators correctly', () => {
-    const operator1 = { name: 'test', source: { type: 'manifest' as const, url: 'https://example.com/1.yaml' }, version: '1.0.0' };
-    const operator2 = { name: 'test', source: { type: 'manifest' as const, url: 'https://example.com/2.yaml' }, version: '2.0.0' };
+    const operator1 = { name: 'test', source: { type: 'manifest' as const, url: 'https://example.com/1.yaml', version: '1.0.0' }, version: '1.0.0' };
+    const operator2 = { name: 'test', source: { type: 'manifest' as const, url: 'https://example.com/2.yaml', version: '2.0.0' }, version: '2.0.0' };
 
     function MultiOperatorComponent() {
       return [

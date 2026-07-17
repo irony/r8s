@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { render, jsx, Fragment } from '@r8s/core';
-import { Database, App, WebService, Ingress, Cluster } from '../dist/index';
+import { validateResource } from '@r8s/core';
+import { Database, App, WebService, Ingress, Cluster } from '../src/index';
 import { OperatorContext } from '@r8s/core/defaults';
-import { cnpgOperator, nginxIngressOperator } from '../dist/operators';
+import { cnpgOperator, nginxIngressOperator } from '../src/operators';
 
 describe('Recipes Error Cases', () => {
   describe('Database', () => {
@@ -18,7 +19,9 @@ describe('Recipes Error Cases', () => {
       const element = jsx(Database, { name: '' });
       const result = render(element);
 
-      expect(result.resources[0].metadata.name).toBe('');
+      // Empty name should be caught by validation
+      const validationErrors = validateResource(result.resources[0]);
+      expect(validationErrors.some(e => e.code === 'MISSING_NAME')).toBe(true);
     });
 
     it('should not duplicate CNPG operator when provided via context', () => {
@@ -36,7 +39,9 @@ describe('Recipes Error Cases', () => {
       const element = jsx(Database, { name: 'test-db_123' });
       const result = render(element);
 
-      expect(result.resources[0].metadata.name).toBe('test-db_123');
+      // Names with underscores are invalid in Kubernetes
+      const validationErrors = validateResource(result.resources[0]);
+      expect(validationErrors.some(e => e.code === 'INVALID_NAME')).toBe(true);
     });
   });
 

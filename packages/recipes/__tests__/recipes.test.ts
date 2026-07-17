@@ -93,7 +93,7 @@ describe('Ingress Recipe', () => {
       host: 'test.example.com',
       serviceName: 'test-svc',
       servicePort: 8080,
-      tlsSecretName: 'test-tls',
+      tls: { secretName: 'test-tls', clusterIssuer: 'letsencrypt' },
     });
 
     const result = render(element);
@@ -162,7 +162,7 @@ describe('Ingress Recipe', () => {
       name: 'test-ingress',
       host: 'test.example.com',
       serviceName: 'test-svc',
-      tlsSecretName: 'test-tls',
+      tls: { secretName: 'test-tls', clusterIssuer: 'letsencrypt' },
     });
 
     const result = render(element);
@@ -183,7 +183,7 @@ describe('Ingress Recipe', () => {
         name: 'test-ingress',
         host: 'test.example.com',
         serviceName: 'test-svc',
-        tlsSecretName: 'test-tls',
+        tls: { secretName: 'test-tls', clusterIssuer: 'letsencrypt' },
       }),
     });
 
