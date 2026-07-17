@@ -8,17 +8,18 @@ export function Head() {
   if (!recipe) {
     return (
       <>
-        <title>Recipe Not Found — r8s</title>
+        <title>{`Recipe Not Found — r8s`}</title>
         <meta name="robots" content="noindex" />
       </>
     );
   }
 
   const keywords = recipe.keywords.join(", ");
+  const title = `${recipe.title} — r8s Recipes`;
   
   return (
     <>
-      <title>{recipe.title} — r8s Recipes</title>
+      <title>{title}</title>
       <meta name="description" content={recipe.description} />
       <meta name="keywords" content={keywords} />
       <meta property="og:title" content={recipe.title} />
