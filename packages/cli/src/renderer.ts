@@ -43,7 +43,7 @@ export async function renderToYaml(entryFile: string): Promise<string> {
   // Import the bundled module
   let module: EntryModule;
   try {
-    module = await import(dataUrl) as EntryModule;
+    module = (await import(dataUrl)) as EntryModule;
   } catch (error) {
     throw new Error(
       `Failed to import bundled module: ${error instanceof Error ? error.message : String(error)}`
@@ -53,9 +53,7 @@ export async function renderToYaml(entryFile: string): Promise<string> {
   const Component = module.default;
 
   if (!Component) {
-    throw new Error(
-      `Entry file ${entryFile} must export a default component or function`
-    );
+    throw new Error(`Entry file ${entryFile} must export a default component or function`);
   }
 
   let element: r8sElement;
@@ -70,7 +68,7 @@ export async function renderToYaml(entryFile: string): Promise<string> {
   if (renderResult.resources.length === 0) {
     throw new Error(
       `No Kubernetes resources rendered from ${entryFile}. ` +
-      `Ensure your component returns resources with 'apiVersion' and 'kind'.`
+        `Ensure your component returns resources with 'apiVersion' and 'kind'.`
     );
   }
 

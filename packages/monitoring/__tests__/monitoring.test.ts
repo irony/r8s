@@ -19,9 +19,7 @@ describe('ServiceMonitor', () => {
       name: 'api-metrics',
       namespace: 'production',
       selector: { matchLabels: { app: 'api' } },
-      endpoints: [
-        { port: 'metrics', path: '/metrics', interval: '30s' },
-      ],
+      endpoints: [{ port: 'metrics', path: '/metrics', interval: '30s' }],
     });
 
     const result = render(element);
@@ -76,9 +74,7 @@ describe('PodMonitor', () => {
       name: 'sidecar-metrics',
       namespace: 'production',
       selector: { matchLabels: { app: 'worker' } },
-      podMetricsEndpoints: [
-        { port: 'metrics', path: '/metrics', interval: '15s' },
-      ],
+      podMetricsEndpoints: [{ port: 'metrics', path: '/metrics', interval: '15s' }],
     });
 
     const result = render(element);

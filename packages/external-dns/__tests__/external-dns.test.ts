@@ -64,6 +64,8 @@ describe('externalDNSAnnotations', () => {
       targets: ['192.168.1.100', '192.168.1.101'],
     });
 
-    expect(annotations['external-dns.alpha.kubernetes.io/target']).toBe('192.168.1.100,192.168.1.101');
+    expect(annotations['external-dns.alpha.kubernetes.io/target']).toBe(
+      '192.168.1.100,192.168.1.101'
+    );
   });
 });

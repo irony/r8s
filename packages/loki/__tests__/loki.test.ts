@@ -39,13 +39,17 @@ describe('AlertingRule', () => {
     const element = jsx(AlertingRule, {
       name: 'high-error-rate',
       namespace: 'loki',
-      groups: [{
-        name: 'errors',
-        rules: [{
-          alert: 'HighErrorRate',
-          expr: 'sum(rate({app="api"} |= "ERROR" [5m])) > 10',
-        }],
-      }],
+      groups: [
+        {
+          name: 'errors',
+          rules: [
+            {
+              alert: 'HighErrorRate',
+              expr: 'sum(rate({app="api"} |= "ERROR" [5m])) > 10',
+            },
+          ],
+        },
+      ],
     });
 
     const result = render(element);

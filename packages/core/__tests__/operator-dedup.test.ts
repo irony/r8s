@@ -31,10 +31,7 @@ describe('Operator deduplication', () => {
 
     const result = render(
       jsx(Fragment, {
-        children: [
-          jsx(DatabaseComponent, {}),
-          jsx(BackupComponent, {}),
-        ],
+        children: [jsx(DatabaseComponent, {}), jsx(BackupComponent, {})],
       })
     );
 
@@ -72,10 +69,7 @@ describe('Operator deduplication', () => {
 
     const result = render(
       jsx(Fragment, {
-        children: [
-          jsx(DatabaseComponent, {}),
-          jsx(TLSComponent, {}),
-        ],
+        children: [jsx(DatabaseComponent, {}), jsx(TLSComponent, {})],
       })
     );
 
@@ -83,7 +77,7 @@ describe('Operator deduplication', () => {
     expect(result.resources).toHaveLength(2);
     expect(result.operators).toHaveLength(2);
 
-    const names = result.operators.map(op => op.name);
+    const names = result.operators.map((op) => op.name);
     expect(names).toContain('cnpg');
     expect(names).toContain('cert-manager');
   });

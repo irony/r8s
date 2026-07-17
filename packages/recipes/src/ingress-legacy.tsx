@@ -13,12 +13,12 @@ export interface CustomIngressProps {
 
 /**
  * Simple ingress with automatic TLS via cert-manager.
- * 
+ *
  * @example
- * <CustomIngress 
- *   name="app" 
- *   host="app.example.com" 
- *   serviceName="frontend" 
+ * <CustomIngress
+ *   name="app"
+ *   host="app.example.com"
+ *   serviceName="frontend"
  * />
  */
 export function CustomIngress(props: CustomIngressProps) {
@@ -50,26 +50,32 @@ export function CustomIngress(props: CustomIngressProps) {
     },
     spec: {
       ingressClassName: 'nginx',
-      rules: [{
-        host,
-        http: {
-          paths: [{
-            path: '/',
-            pathType: 'Prefix',
-            backend: {
-              service: {
-                name: serviceName,
-                port: { number: servicePort },
+      rules: [
+        {
+          host,
+          http: {
+            paths: [
+              {
+                path: '/',
+                pathType: 'Prefix',
+                backend: {
+                  service: {
+                    name: serviceName,
+                    port: { number: servicePort },
+                  },
+                },
               },
-            },
-          }],
+            ],
+          },
         },
-      }],
+      ],
       ...(tlsSecretName && {
-        tls: [{
-          hosts: [host],
-          secretName: tlsSecretName,
-        }],
+        tls: [
+          {
+            hosts: [host],
+            secretName: tlsSecretName,
+          },
+        ],
       }),
     },
   };

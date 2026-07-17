@@ -6,12 +6,14 @@ import { tmpdir } from 'os';
 
 describe('resourcesToYAML', () => {
   it('should convert simple resource to YAML', () => {
-    const resources = [{
-      apiVersion: 'v1',
-      kind: 'ConfigMap',
-      metadata: { name: 'test', namespace: 'default' },
-      data: { key: 'value' },
-    }];
+    const resources = [
+      {
+        apiVersion: 'v1',
+        kind: 'ConfigMap',
+        metadata: { name: 'test', namespace: 'default' },
+        data: { key: 'value' },
+      },
+    ];
 
     const yaml = resourcesToYAML(resources);
     expect(yaml).toContain('apiVersion: v1');
@@ -22,14 +24,16 @@ describe('resourcesToYAML', () => {
   });
 
   it('should handle arrays', () => {
-    const resources = [{
-      apiVersion: 'v1',
-      kind: 'Service',
-      metadata: { name: 'test' },
-      spec: {
-        ports: [{ port: 80, targetPort: 8080 }],
+    const resources = [
+      {
+        apiVersion: 'v1',
+        kind: 'Service',
+        metadata: { name: 'test' },
+        spec: {
+          ports: [{ port: 80, targetPort: 8080 }],
+        },
       },
-    }];
+    ];
 
     const yaml = resourcesToYAML(resources);
     expect(yaml).toContain('ports:');
@@ -54,12 +58,14 @@ describe('resourcesToYAML', () => {
   });
 
   it('should quote strings with special characters', () => {
-    const resources = [{
-      apiVersion: 'v1',
-      kind: 'ConfigMap',
-      metadata: { name: 'test' },
-      data: { url: 'http://example.com:8080/path' },
-    }];
+    const resources = [
+      {
+        apiVersion: 'v1',
+        kind: 'ConfigMap',
+        metadata: { name: 'test' },
+        data: { url: 'http://example.com:8080/path' },
+      },
+    ];
 
     const yaml = resourcesToYAML(resources);
     expect(yaml).toContain('"http://example.com:8080/path"');
@@ -69,24 +75,24 @@ describe('resourcesToYAML', () => {
 describe('findEntryFiles', () => {
   it('should find r8s.tsx files', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'r8s-test-'));
-    
+
     // Create test structure
     mkdirSync(join(tmpDir, 'apps', 'web'), { recursive: true });
     mkdirSync(join(tmpDir, 'apps', 'api'), { recursive: true });
     mkdirSync(join(tmpDir, 'node_modules'), { recursive: true });
-    
+
     writeFileSync(join(tmpDir, 'apps', 'web', 'r8s.tsx'), 'export default () => {}');
     writeFileSync(join(tmpDir, 'apps', 'api', 'r8s.tsx'), 'export default () => {}');
     writeFileSync(join(tmpDir, 'apps', 'other.tsx'), 'export default () => {}');
     writeFileSync(join(tmpDir, 'node_modules', 'r8s.tsx'), 'export default () => {}');
-    
+
     const files = findEntryFiles(tmpDir, 'r8s.tsx');
-    
+
     expect(files).toHaveLength(2);
-    expect(files.some(f => f.includes('apps/web/r8s.tsx'))).toBe(true);
-    expect(files.some(f => f.includes('apps/api/r8s.tsx'))).toBe(true);
-    expect(files.some(f => f.includes('node_modules'))).toBe(false);
-    
+    expect(files.some((f) => f.includes('apps/web/r8s.tsx'))).toBe(true);
+    expect(files.some((f) => f.includes('apps/api/r8s.tsx'))).toBe(true);
+    expect(files.some((f) => f.includes('node_modules'))).toBe(false);
+
     // Cleanup
     rmSync(tmpDir, { recursive: true });
   });

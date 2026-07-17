@@ -96,7 +96,9 @@ describe('VaultDatabaseSecret', () => {
     expect((secret as any).spec.path).toBe('creds/app-db');
     expect((secret as any).spec.destination.name).toBe('app-db-credentials');
     expect((secret as any).spec.destination.create).toBe(true);
-    expect((secret as any).spec.rolloutRestartTargets).toEqual([{ kind: 'Deployment', name: 'app' }]);
+    expect((secret as any).spec.rolloutRestartTargets).toEqual([
+      { kind: 'Deployment', name: 'app' },
+    ]);
   });
 });
 

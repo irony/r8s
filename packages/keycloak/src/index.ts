@@ -50,14 +50,18 @@ export function KeycloakInstance(props: KeycloakInstanceProps) {
   // Auto-wire from DatabaseContext if available
   const dbContext = useContext(DatabaseContext);
   const dbHost = explicitDbHost ?? dbContext?.host;
-  const dbUsernameSecret = explicitUsernameSecret ?? (dbContext && {
-    name: dbContext.passwordSecret.name,
-    key: 'username',
-  });
-  const dbPasswordSecret = explicitPasswordSecret ?? (dbContext && {
-    name: dbContext.passwordSecret.name,
-    key: dbContext.passwordKey || 'password',
-  });
+  const dbUsernameSecret =
+    explicitUsernameSecret ??
+    (dbContext && {
+      name: dbContext.passwordSecret.name,
+      key: 'username',
+    });
+  const dbPasswordSecret =
+    explicitPasswordSecret ??
+    (dbContext && {
+      name: dbContext.passwordSecret.name,
+      key: dbContext.passwordKey || 'password',
+    });
 
   const keycloak: Keycloak = {
     apiVersion: 'k8s.keycloak.org/v2alpha1',
@@ -122,15 +126,7 @@ export interface KeycloakRealmProps {
 }
 
 export function KeycloakRealm(props: KeycloakRealmProps) {
-  const {
-    name,
-    namespace,
-    keycloakName,
-    realmName,
-    displayName,
-    clients = [],
-    users = [],
-  } = props;
+  const { name, namespace, keycloakName, realmName, displayName, clients = [], users = [] } = props;
 
   const realmImport: KeycloakRealmImport = {
     apiVersion: 'k8s.keycloak.org/v2alpha1',
@@ -142,7 +138,7 @@ export function KeycloakRealm(props: KeycloakRealmProps) {
         realm: realmName,
         enabled: true,
         ...(displayName && { displayName }),
-        clients: clients.map(client => ({
+        clients: clients.map((client) => ({
           clientId: client.clientId,
           name: client.name || client.clientId,
           enabled: true,
@@ -156,16 +152,18 @@ export function KeycloakRealm(props: KeycloakRealmProps) {
           publicClient: client.publicClient !== false,
           protocol: 'openid-connect',
         })),
-        users: users.map(user => ({
+        users: users.map((user) => ({
           username: user.username,
           enabled: true,
           ...(user.email && { email: user.email }),
           ...(user.password && {
-            credentials: [{
-              type: 'password',
-              value: user.password,
-              temporary: user.temporary || false,
-            }],
+            credentials: [
+              {
+                type: 'password',
+                value: user.password,
+                temporary: user.temporary || false,
+              },
+            ],
           }),
         })),
       },

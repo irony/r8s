@@ -107,9 +107,7 @@ export function Postgres(props: PostgresProps) {
     },
   };
 
-  const outputResources: (ReturnType<typeof jsx>)[] = [
-    jsx('Cluster', cluster),
-  ];
+  const outputResources: ReturnType<typeof jsx>[] = [jsx('Cluster', cluster)];
 
   // Add Secret if password is provided directly
   if (password && !passwordSecretName) {

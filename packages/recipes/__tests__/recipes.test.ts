@@ -103,7 +103,9 @@ describe('Ingress Recipe', () => {
     const ingress = result.resources[0];
     expect(ingress.kind).toBe('Ingress');
     expect(ingress.metadata.name).toBe('test-ingress');
-    expect(ingress.metadata.annotations).toHaveProperty('nginx.ingress.kubernetes.io/rewrite-target');
+    expect(ingress.metadata.annotations).toHaveProperty(
+      'nginx.ingress.kubernetes.io/rewrite-target'
+    );
     expect(ingress.metadata.annotations).toHaveProperty('cert-manager.io/cluster-issuer');
 
     const spec = (ingress as any).spec;
@@ -168,22 +170,19 @@ describe('Ingress Recipe', () => {
     const result = render(element);
 
     expect(result.operators).toHaveLength(2);
-    const names = result.operators.map(op => op.name);
+    const names = result.operators.map((op) => op.name);
     expect(names).toContain('nginx-ingress');
     expect(names).toContain('cert-manager');
   });
 
   it('should not duplicate operators when provided via context', () => {
     const element = jsx(OperatorContext.Provider, {
-      value: [
-        nginxIngressOperator('1.15.1'),
-        certManagerOperator('1.14.0'),
-      ],
+      value: [nginxIngressOperator('1.15.1'), certManagerOperator('1.14.0')],
       children: jsx(Ingress, {
         name: 'test-ingress',
         host: 'test.example.com',
         serviceName: 'test-svc',
-      tls: { secretName: 'test-tls', clusterIssuer: 'letsencrypt' },
+        tls: { secretName: 'test-tls', clusterIssuer: 'letsencrypt' },
       }),
     });
 
@@ -236,7 +235,7 @@ describe('App Recipe', () => {
 
     const result = render(element);
 
-    const names = result.operators.map(op => op.name);
+    const names = result.operators.map((op) => op.name);
     expect(names).toContain('nginx-ingress');
   });
 
@@ -250,7 +249,7 @@ describe('App Recipe', () => {
 
     const result = render(element);
 
-    const names = result.operators.map(op => op.name);
+    const names = result.operators.map((op) => op.name);
     expect(names).toContain('cert-manager');
     expect(names).toContain('nginx-ingress');
   });
@@ -264,17 +263,14 @@ describe('App Recipe', () => {
 
     const result = render(element);
 
-    const names = result.operators.map(op => op.name);
+    const names = result.operators.map((op) => op.name);
     expect(names).not.toContain('cert-manager');
     expect(names).toContain('nginx-ingress');
   });
 
   it('should use shared operators from context without duplication', () => {
     const element = jsx(OperatorContext.Provider, {
-      value: [
-        certManagerOperator('1.14.0'),
-        nginxIngressOperator('1.15.1'),
-      ],
+      value: [certManagerOperator('1.14.0'), nginxIngressOperator('1.15.1')],
       children: jsx(App, {
         name: 'myapp',
         host: 'myapp.example.com',

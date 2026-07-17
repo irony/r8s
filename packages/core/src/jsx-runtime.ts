@@ -11,11 +11,7 @@ export interface r8sElement {
   key: string | null;
 }
 
-export function jsx<P = any>(
-  type: string | Function | symbol,
-  props: P,
-  key?: string
-): r8sElement {
+export function jsx<P = any>(type: string | Function | symbol, props: P, key?: string): r8sElement {
   return {
     type,
     props,
