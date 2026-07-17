@@ -1,6 +1,11 @@
 export { Database, type DatabaseProps } from './database';
 export { Cluster, type ClusterProps } from './cluster';
-export { WebService, type WebServiceProps, type SecretRef, type VaultSecretRef } from './web-service';
+export {
+  WebService,
+  type WebServiceProps,
+  type SecretRef,
+  type VaultSecretRef,
+} from './web-service';
 export { Ingress, type IngressProps } from './ingress';
 export { App, type AppProps } from './app';
 

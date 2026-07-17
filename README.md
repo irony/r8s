@@ -158,6 +158,35 @@ Nested components render to a flat list of Kubernetes resources. No magic, no ru
                                ...
 ```
 
+**6. Testable infrastructure**
+
+Because r8s components are just TypeScript functions, you can test them with standard tools like Vitest:
+
+```tsx
+import { describe, it, expect } from 'vitest';
+import { render } from '@r8s/core';
+import { App, Database } from '@r8s/recipes';
+
+describe('MyApp', () => {
+  it('should create a Deployment with 3 replicas', () => {
+    const result = render(
+      <App name="api" image="myapp/api:v1" host="api.example.com" replicas={3} />
+    );
+
+    const deployment = result.resources.find(r => r.kind === 'Deployment');
+    expect(deployment.spec.replicas).toBe(3);
+  });
+
+  it('should require CNPG operator when database is used', () => {
+    const result = render(<Database name="app-db" storage="10Gi" />);
+    expect(result.operators).toHaveLength(1);
+    expect(result.operators[0].name).toBe('cnpg');
+  });
+});
+```
+
+This means you can write guardrails — tests that verify your infrastructure meets organizational requirements (network policies, resource limits, label conventions) before anything reaches a cluster.
+
 ## Quick Start
 
 ### 1. Create a new project

@@ -9,7 +9,11 @@ export const cnpgOperator = (version = '1.22.5') =>
     {
       description: 'CloudNativePG PostgreSQL operator',
       namespace: 'cnpg-system',
-      crds: ['clusters.postgresql.cnpg.io', 'poolers.postgresql.cnpg.io', 'scheduledbackups.postgresql.cnpg.io'],
+      crds: [
+        'clusters.postgresql.cnpg.io',
+        'poolers.postgresql.cnpg.io',
+        'scheduledbackups.postgresql.cnpg.io',
+      ],
     }
   );
 

@@ -51,13 +51,7 @@ export interface LoggingProps {
  * />
  */
 export function Logging(props: LoggingProps) {
-  const {
-    name,
-    namespace = 'default',
-    fluentd,
-    fluentbit,
-    controlNamespace,
-  } = props;
+  const { name, namespace = 'default', fluentd, fluentbit, controlNamespace } = props;
 
   const logging = {
     apiVersion: 'logging.banzaicloud.io/v1beta1',
@@ -114,13 +108,7 @@ export interface FlowProps {
  * Flow for routing logs to outputs.
  */
 export function Flow(props: FlowProps) {
-  const {
-    name,
-    namespace = 'default',
-    match,
-    filters,
-    outputRefs,
-  } = props;
+  const { name, namespace = 'default', match, filters, outputRefs } = props;
 
   const flow = {
     apiVersion: 'logging.banzaicloud.io/v1beta1',
@@ -155,12 +143,7 @@ export interface OutputProps {
  * Output destination for logs.
  */
 export function Output(props: OutputProps) {
-  const {
-    name,
-    namespace = 'default',
-    loki,
-    s3,
-  } = props;
+  const { name, namespace = 'default', loki, s3 } = props;
 
   const output = {
     apiVersion: 'logging.banzaicloud.io/v1beta1',

@@ -24,26 +24,21 @@ export interface ExternalDNSRecordProps {
 }
 
 export function ExternalDNSRecord(props: ExternalDNSRecordProps) {
-  const {
-    name,
-    namespace = 'default',
-    dnsName,
-    targets,
-    recordType = 'A',
-    ttl = 300,
-  } = props;
+  const { name, namespace = 'default', dnsName, targets, recordType = 'A', ttl = 300 } = props;
 
   const endpoint: DNSEndpoint = {
     apiVersion: 'externaldns.k8s.io/v1alpha1',
     kind: 'DNSEndpoint',
     metadata: { name, namespace },
     spec: {
-      endpoints: [{
-        dnsName,
-        recordType,
-        targets,
-        recordTTL: ttl,
-      }],
+      endpoints: [
+        {
+          dnsName,
+          recordType,
+          targets,
+          recordTTL: ttl,
+        },
+      ],
     },
   };
 
@@ -55,7 +50,9 @@ export interface ExternalDNSIngressAnnotationProps {
   targets: string[];
 }
 
-export function externalDNSAnnotations(props: ExternalDNSIngressAnnotationProps): Record<string, string> {
+export function externalDNSAnnotations(
+  props: ExternalDNSIngressAnnotationProps
+): Record<string, string> {
   return {
     'external-dns.alpha.kubernetes.io/hostname': props.domain,
     'external-dns.alpha.kubernetes.io/target': props.targets.join(','),

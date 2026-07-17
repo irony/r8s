@@ -1,10 +1,5 @@
 import { jsx } from '@r8s/core';
-import {
-  VaultConnection,
-  VaultAuth,
-  VaultDynamicSecret,
-  VaultStaticSecret,
-} from '@r8s/k8s-types';
+import { VaultConnection, VaultAuth, VaultDynamicSecret, VaultStaticSecret } from '@r8s/k8s-types';
 import { manifestOperator } from '@r8s/k8s-types';
 
 /** Vault Secrets Operator declaration */
@@ -29,13 +24,7 @@ export interface VaultConnectionProps {
 }
 
 export function VaultConnectionConfig(props: VaultConnectionProps) {
-  const {
-    name,
-    namespace = 'default',
-    address,
-    caCertSecretRef,
-    skipTLSVerify = false,
-  } = props;
+  const { name, namespace = 'default', address, caCertSecretRef, skipTLSVerify = false } = props;
 
   const connection: VaultConnection = {
     apiVersion: 'secrets.hashicorp.com/v1beta1',
@@ -61,14 +50,7 @@ export interface VaultKubernetesAuthProps {
 }
 
 export function VaultKubernetesAuth(props: VaultKubernetesAuthProps) {
-  const {
-    name,
-    namespace,
-    vaultConnectionRef,
-    role,
-    serviceAccount,
-    mount = 'kubernetes',
-  } = props;
+  const { name, namespace, vaultConnectionRef, role, serviceAccount, mount = 'kubernetes' } = props;
 
   const auth: VaultAuth = {
     apiVersion: 'secrets.hashicorp.com/v1beta1',
@@ -96,15 +78,7 @@ export interface VaultDatabaseSecretProps {
 }
 
 export function VaultDatabaseSecret(props: VaultDatabaseSecretProps) {
-  const {
-    name,
-    namespace,
-    vaultAuthRef,
-    mount,
-    path,
-    secretName,
-    rolloutRestartTarget,
-  } = props;
+  const { name, namespace, vaultAuthRef, mount, path, secretName, rolloutRestartTarget } = props;
 
   const dynamicSecret: VaultDynamicSecret = {
     apiVersion: 'secrets.hashicorp.com/v1beta1',

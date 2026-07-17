@@ -150,8 +150,8 @@ describe('Recipes Error Cases', () => {
         name: 'main',
         children: jsx(Fragment, {
           children: [
-            jsx(Database, { name: 'db1' }),
-            jsx(Database, { name: 'db2' }),
+            jsx(Database, { name: 'db1', password: 'test-pass-1' }),
+            jsx(Database, { name: 'db2', password: 'test-pass-2' }),
           ],
         }),
       });
@@ -167,7 +167,7 @@ describe('Recipes Error Cases', () => {
         value: [cnpgOperator('1.22.5'), nginxIngressOperator('1.15.1')],
         children: jsx(Fragment, {
           children: [
-            jsx(Database, { name: 'app-db', storage: '10Gi' }),
+            jsx(Database, { name: 'app-db', storage: '10Gi', password: 'test-pass' }),
             jsx(App, {
               name: 'api',
               image: 'myapp/api:v1',
@@ -188,7 +188,7 @@ describe('Recipes Error Cases', () => {
         value: [cnpgOperator('1.22.5')],
         children: jsx(Cluster, {
           name: 'main',
-          children: jsx(Database, { name: 'app-db' }),
+          children: jsx(Database, { name: 'app-db', password: 'test-pass' }),
         }),
       });
 

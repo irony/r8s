@@ -21,9 +21,21 @@
 /** Supported operator installation methods */
 export type OperatorSource =
   | { type: 'manifest'; url: string; version: string; namespace?: string }
-  | { type: 'helm'; chart: string; repository: string; version: string; namespace?: string; values?: Record<string, unknown> }
+  | {
+      type: 'helm';
+      chart: string;
+      repository: string;
+      version: string;
+      namespace?: string;
+      values?: Record<string, unknown>;
+    }
   | { type: 'olm'; package: string; channel: string; version?: string }
-  | { type: 'flux'; sourceRef: { kind: string; name: string; namespace: string }; chart: string; version: string };
+  | {
+      type: 'flux';
+      sourceRef: { kind: string; name: string; namespace: string };
+      chart: string;
+      version: string;
+    };
 
 /** Operator dependency declaration */
 export interface Operator {

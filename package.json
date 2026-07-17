@@ -10,12 +10,16 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
-    "clean": "npm run clean --workspaces"
+    "clean": "npm run clean --workspaces",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
     "esbuild": "^0.28.1",
+    "prettier": "^3.9.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.1",
     "typescript": "^5.3.0",
     "vitest": "^1.0.0"
   }

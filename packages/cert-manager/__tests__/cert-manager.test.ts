@@ -35,7 +35,9 @@ describe('LetsEncryptIssuer', () => {
     const result = render(element);
 
     const issuer = result.resources[0];
-    expect((issuer as any).spec.acme.server).toBe('https://acme-staging-v02.api.letsencrypt.org/directory');
+    expect((issuer as any).spec.acme.server).toBe(
+      'https://acme-staging-v02.api.letsencrypt.org/directory'
+    );
   });
 
   it('should use default ingress class', () => {

@@ -109,7 +109,7 @@ export function WebService(props: WebServiceProps) {
   // Vault secrets — create VaultStaticSecret objects
   for (const [envName, ref] of Object.entries(vault)) {
     const secretName = `${name}-${envName.toLowerCase().replace(/_/g, '-')}-vault`;
-    
+
     // Create VaultStaticSecret
     vaultResources.push(
       jsx('VaultStaticSecret', {
@@ -141,22 +141,39 @@ export function WebService(props: WebServiceProps) {
 
   // Auto-wire DATABASE_URL from DatabaseContext if available
   const dbContext = useContext(DatabaseContext);
-  if (dbContext && !envVars.some(e => e.name === 'DATABASE_URL')) {
+  if (dbContext && !envVars.some((e) => e.name === 'DATABASE_URL')) {
+    // Build DATABASE_URL from context fields instead of assuming a 'uri' key exists
+    const { host, port, database, username, passwordSecret } = dbContext;
+
+    // Set individual PostgreSQL env vars for flexibility
+    envVars.push(
+      { name: 'PGHOST', value: host },
+      { name: 'PGPORT', value: String(port || 5432) },
+      { name: 'PGDATABASE', value: database },
+      { name: 'PGUSER', value: username },
+      {
+        name: 'PGPASSWORD',
+        valueFrom: {
+          secretKeyRef: {
+            name: passwordSecret.name,
+            key: passwordSecret.key || 'password',
+          },
+        },
+      }
+    );
+
+    // Set DATABASE_URL as a template referencing the individual vars
+    // Kubernetes will expand $(VAR) syntax in env var values
     envVars.push({
       name: 'DATABASE_URL',
-      valueFrom: {
-        secretKeyRef: {
-          name: dbContext.passwordSecret.name,
-          key: 'uri',
-        },
-      },
+      value: `postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)`,
     });
   }
 
   // Declare Vault Secrets Operator if vault secrets are used
   if (Object.keys(vault).length > 0) {
     const sharedOperators = useContext(OperatorContext);
-    const hasVSO = sharedOperators.some(op => op.name === 'vault-secrets-operator');
+    const hasVSO = sharedOperators.some((op) => op.name === 'vault-secrets-operator');
     if (!hasVSO) {
       vaultResources.push(declareOperator(vaultSecretsOperator()));
     }
@@ -172,24 +189,26 @@ export function WebService(props: WebServiceProps) {
       template: {
         metadata: { labels: { app: name } },
         spec: {
-          containers: [{
-            name: 'app',
-            image,
-            ports: [{ containerPort: port }],
-            env: envVars,
-            ...(envFrom.length > 0 && { envFrom }),
-            ...(resources && { resources }),
-            livenessProbe: {
-              httpGet: { path: '/health', port },
-              initialDelaySeconds: 10,
-              periodSeconds: 10,
+          containers: [
+            {
+              name: 'app',
+              image,
+              ports: [{ containerPort: port }],
+              env: envVars,
+              ...(envFrom.length > 0 && { envFrom }),
+              ...(resources && { resources }),
+              livenessProbe: {
+                httpGet: { path: '/health', port },
+                initialDelaySeconds: 10,
+                periodSeconds: 10,
+              },
+              readinessProbe: {
+                httpGet: { path: '/ready', port },
+                initialDelaySeconds: 5,
+                periodSeconds: 5,
+              },
             },
-            readinessProbe: {
-              httpGet: { path: '/ready', port },
-              initialDelaySeconds: 5,
-              periodSeconds: 5,
-            },
-          }],
+          ],
         },
       },
     },
@@ -206,9 +225,5 @@ export function WebService(props: WebServiceProps) {
     },
   };
 
-  return [
-    ...vaultResources,
-    jsx('Deployment', deployment),
-    jsx('Service', service),
-  ];
+  return [...vaultResources, jsx('Deployment', deployment), jsx('Service', service)];
 }

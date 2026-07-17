@@ -52,7 +52,7 @@ describe('Operator Declaration', () => {
     const result = render(element);
 
     expect(result.operators).toHaveLength(3);
-    const names = result.operators.map(op => op.name);
+    const names = result.operators.map((op) => op.name);
     expect(names).toContain('a');
     expect(names).toContain('b');
     expect(names).toContain('c');
@@ -83,7 +83,7 @@ describe('Operator Context', () => {
   it('should not duplicate operators already in context', () => {
     function Component() {
       const operators = useContext(OperatorContext);
-      const hasTest = operators.some(op => op.name === 'test');
+      const hasTest = operators.some((op) => op.name === 'test');
       if (!hasTest) {
         return declareOperator(manifestOperator('test', 'https://example.com/test.yaml', '1.0.0'));
       }
@@ -185,10 +185,7 @@ describe('Operator Deduplication Logic', () => {
 
     const result = render(
       jsx(Fragment, {
-        children: [
-          jsx(Database1, {}),
-          jsx(Database2, {}),
-        ],
+        children: [jsx(Database1, {}), jsx(Database2, {})],
       })
     );
 

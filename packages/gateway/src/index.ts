@@ -4,26 +4,20 @@ import type { BaseRouteProps, RouteTarget, TLSConfig, ListenerConfig } from '@r8
 
 /** Envoy Gateway operator declaration */
 export const envoyGatewayOperator = (version = '1.7.0') =>
-  helmOperator(
-    'envoy-gateway',
-    'gateway-helm',
-    'oci://docker.io/envoyproxy',
-    version,
-    {
-      description: 'Envoy Gateway - Kubernetes Gateway API implementation',
-      namespace: 'envoy-gateway-system',
-      crds: [
-        'gatewayclasses.gateway.networking.k8s.io',
-        'gateways.gateway.networking.k8s.io',
-        'httproutes.gateway.networking.k8s.io',
-        'grpcroutes.gateway.networking.k8s.io',
-        'tlsroutes.gateway.networking.k8s.io',
-        'tcproutes.gateway.networking.k8s.io',
-        'udproutes.gateway.networking.k8s.io',
-        'envoyproxies.gateway.envoyproxy.io',
-      ],
-    }
-  );
+  helmOperator('envoy-gateway', 'gateway-helm', 'oci://docker.io/envoyproxy', version, {
+    description: 'Envoy Gateway - Kubernetes Gateway API implementation',
+    namespace: 'envoy-gateway-system',
+    crds: [
+      'gatewayclasses.gateway.networking.k8s.io',
+      'gateways.gateway.networking.k8s.io',
+      'httproutes.gateway.networking.k8s.io',
+      'grpcroutes.gateway.networking.k8s.io',
+      'tlsroutes.gateway.networking.k8s.io',
+      'tcproutes.gateway.networking.k8s.io',
+      'udproutes.gateway.networking.k8s.io',
+      'envoyproxies.gateway.envoyproxy.io',
+    ],
+  });
 
 export interface GatewayProps {
   name: string;
@@ -52,13 +46,7 @@ export interface GatewayProps {
  * />
  */
 export function Gateway(props: GatewayProps) {
-  const {
-    name,
-    namespace = 'default',
-    gatewayClassName = 'eg',
-    listeners,
-    addresses,
-  } = props;
+  const { name, namespace = 'default', gatewayClassName = 'eg', listeners, addresses } = props;
 
   const gateway = {
     apiVersion: 'gateway.networking.k8s.io/v1',
@@ -66,7 +54,7 @@ export function Gateway(props: GatewayProps) {
     metadata: { name, namespace },
     spec: {
       gatewayClassName,
-      listeners: listeners.map(l => ({
+      listeners: listeners.map((l) => ({
         name: l.name,
         protocol: l.protocol,
         port: l.port,
@@ -111,7 +99,13 @@ export interface HTTPRouteProps {
     }>;
     backendRefs: RouteTarget[];
     filters?: Array<{
-      type: 'URLRewrite' | 'RequestHeaderModifier' | 'ResponseHeaderModifier' | 'RequestRedirect' | 'RequestMirror' | 'ExtensionRef';
+      type:
+        | 'URLRewrite'
+        | 'RequestHeaderModifier'
+        | 'ResponseHeaderModifier'
+        | 'RequestRedirect'
+        | 'RequestMirror'
+        | 'ExtensionRef';
       urlRewrite?: {
         hostname?: string;
         path?: {
@@ -128,13 +122,7 @@ export interface HTTPRouteProps {
  * HTTPRoute for Gateway API routing.
  */
 export function HTTPRoute(props: HTTPRouteProps) {
-  const {
-    name,
-    namespace = 'default',
-    parentRefs,
-    hostnames,
-    rules,
-  } = props;
+  const { name, namespace = 'default', parentRefs, hostnames, rules } = props;
 
   const route = {
     apiVersion: 'gateway.networking.k8s.io/v1',
@@ -143,9 +131,9 @@ export function HTTPRoute(props: HTTPRouteProps) {
     spec: {
       parentRefs,
       ...(hostnames && { hostnames }),
-      rules: rules.map(r => ({
+      rules: rules.map((r) => ({
         ...(r.matches && {
-          matches: r.matches.map(m => ({
+          matches: r.matches.map((m) => ({
             ...(m.path && { path: m.path }),
             ...(m.method && { method: m.method }),
             ...(m.headers && { headers: m.headers }),
@@ -195,13 +183,15 @@ export function EnvoyProxy(props: EnvoyProxyProps) {
                 type: 'StrategicMerge',
                 value: {
                   spec: {
-                    ports: [{
-                      name: `https-${nodePort}`,
-                      port: nodePort,
-                      nodePort,
-                      protocol: 'TCP',
-                      targetPort: nodePort,
-                    }],
+                    ports: [
+                      {
+                        name: `https-${nodePort}`,
+                        port: nodePort,
+                        nodePort,
+                        protocol: 'TCP',
+                        targetPort: nodePort,
+                      },
+                    ],
                   },
                 },
               },
