@@ -142,14 +142,31 @@ export function WebService(props: WebServiceProps) {
   // Auto-wire DATABASE_URL from DatabaseContext if available
   const dbContext = useContext(DatabaseContext);
   if (dbContext && !envVars.some(e => e.name === 'DATABASE_URL')) {
+    // Build DATABASE_URL from context fields instead of assuming a 'uri' key exists
+    const { host, port, database, username, passwordSecret } = dbContext;
+    
+    // Set individual PostgreSQL env vars for flexibility
+    envVars.push(
+      { name: 'PGHOST', value: host },
+      { name: 'PGPORT', value: String(port || 5432) },
+      { name: 'PGDATABASE', value: database },
+      { name: 'PGUSER', value: username },
+      {
+        name: 'PGPASSWORD',
+        valueFrom: {
+          secretKeyRef: {
+            name: passwordSecret.name,
+            key: passwordSecret.key || 'password',
+          },
+        },
+      }
+    );
+    
+    // Set DATABASE_URL as a template referencing the individual vars
+    // Kubernetes will expand $(VAR) syntax in env var values
     envVars.push({
       name: 'DATABASE_URL',
-      valueFrom: {
-        secretKeyRef: {
-          name: dbContext.passwordSecret.name,
-          key: 'uri',
-        },
-      },
+      value: `postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)`,
     });
   }
 

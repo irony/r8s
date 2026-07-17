@@ -13,3 +13,14 @@ export {
   r8sValidationError,
 } from './validate';
 export type { ValidationError } from './validate';
+export {
+  runGuardrails,
+  defaultGuardrails,
+  requireNetworkPolicies,
+  requireResourceLimits,
+  requireLabels,
+  noPlaintextSecrets,
+  requireTLS,
+  noRootContainers,
+} from './guardrails';
+export type { GuardrailRule } from './guardrails';

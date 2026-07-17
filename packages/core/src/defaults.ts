@@ -83,8 +83,8 @@ export const TLS = createContext<{
  *
  * When multiple databases should share the same CNPG cluster,
  * wrap them in a Cluster component. Each Database reads this
- * context and creates a database within the cluster instead of
- * creating its own cluster.
+ * context and reuses the shared cluster's connection info instead
+ * of creating a dedicated cluster.
  *
  * @example
  * ```tsx
