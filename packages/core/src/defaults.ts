@@ -79,6 +79,34 @@ export const TLS = createContext<{
 }>({ enabled: false });
 
 /**
+ * Cluster context for shared PostgreSQL clusters.
+ *
+ * When multiple databases should share the same CNPG cluster,
+ * wrap them in a Cluster component. Each Database reads this
+ * context and creates a database within the cluster instead of
+ * creating its own cluster.
+ *
+ * @example
+ * ```tsx
+ * import { Cluster } from '@r8s/recipes';
+ *
+ * <Cluster name="main" storage="100Gi">
+ *   <Database name="user-db" />
+ *   <Database name="order-db" />
+ * </Cluster>
+ * ```
+ */
+export interface ClusterConfig {
+  name: string;
+  namespace: string;
+  storage: string;
+  host: string;
+  secretName: string;
+}
+
+export const ClusterContext = createContext<ClusterConfig | null>(null);
+
+/**
  * Database connection context for component composition.
  *
  * When a Database component renders, it sets this context so that
