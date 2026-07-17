@@ -1,6 +1,6 @@
 import { jsx, declareOperator, useContext } from '@r8s/core';
 import { Deployment, Service, EnvVar } from '@r8s/k8s-types';
-import { OperatorContext } from '@r8s/core/defaults';
+import { OperatorContext, DatabaseContext } from '@r8s/core/defaults';
 import { vaultSecretsOperator } from './operators';
 
 export interface SecretRef {
@@ -138,6 +138,15 @@ export function WebService(props: WebServiceProps) {
 
   // Raw env vars (advanced)
   envVars.push(...rawEnv);
+
+  // Auto-wire DATABASE_URL from DatabaseContext if available
+  const dbContext = useContext(DatabaseContext);
+  if (dbContext && !envVars.some(e => e.name === 'DATABASE_URL')) {
+    envVars.push({
+      name: 'DATABASE_URL',
+      value: `postgresql://${dbContext.username}:${dbContext.passwordSecret.key}@${dbContext.host}:${dbContext.port}/${dbContext.database}`,
+    });
+  }
 
   // Declare Vault Secrets Operator if vault secrets are used
   if (Object.keys(vault).length > 0) {

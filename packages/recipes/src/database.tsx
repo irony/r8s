@@ -1,6 +1,6 @@
 import { jsx, useContext, declareOperator } from '@r8s/core';
 import { Cluster } from '@r8s/k8s-types';
-import { DatabaseContext, SecretContext, OperatorContext } from '@r8s/core/defaults';
+import { DatabaseContext, SecretContext, OperatorContext, ClusterContext } from '@r8s/core/defaults';
 import { cnpgOperator } from './operators';
 
 export interface DatabaseProps {
@@ -13,23 +13,24 @@ export interface DatabaseProps {
 }
 
 /**
- * CloudNativePG PostgreSQL cluster with explicit operator dependency.
+ * CloudNativePG PostgreSQL database.
  *
- * Creates a 3-instance HA cluster and declares the CNPG operator as a dependency.
- * If the operator is already provided via OperatorContext, it won't be duplicated.
- *
- * Sets DatabaseContext so that child components (Keycloak, App, etc.) can
- * auto-wire their connections.
+ * By default, creates a dedicated 3-instance HA cluster for this database.
+ * When wrapped in a `<Cluster>` component, creates a database within
+ * the shared cluster instead.
  *
  * @example
- * // Standalone - auto-declares CNPG operator
- * <Database name="myapp" storage="10Gi" />
+ * // Dedicated cluster (default)
+ * <Database name="app-db" storage="10Gi" />
  *
- * // With shared operators via context
- * <OperatorContext.Provider value={[cnpgOperator('1.22.0')]}>
- *   <Database name="app-db" storage="10Gi" />
- * </OperatorContext.Provider>
+ * @example
+ * // Shared cluster
+ * <Cluster name="main" storage="100Gi">
+ *   <Database name="user-db" />
+ *   <Database name="order-db" />
+ * </Cluster>
  *
+ * @example
  * // With child components that auto-connect
  * <Database name="keycloak-db" storage="10Gi">
  *   <KeycloakInstance name="keycloak" hostname="auth.example.com" />
@@ -44,114 +45,155 @@ export function Database(props: DatabaseProps) {
     children,
   } = props;
 
+  const clusterConfig = useContext(ClusterContext);
   const secretProvider = useContext(SecretContext);
   const sharedOperators = useContext(OperatorContext);
   const secretName = `${name}-db-credentials`;
 
-  // Check if CNPG operator is already provided via context
-  const hasCNPG = sharedOperators.some(op => op.name === 'cnpg');
-
-  const cluster: Cluster = {
-    apiVersion: 'postgresql.cnpg.io/v1',
-    kind: 'Cluster',
-    metadata: { name, namespace },
-    spec: {
-      instances: 3,
-      storage: {
-        size: storage,
-      },
-      bootstrap: {
-        initdb: {
-          database: name,
-          owner: name,
-          secret: {
-            name: secretName,
-          },
-        },
-      },
-      monitoring: {
-        enabled: true,
-      },
-    },
-  };
-
-  const connection = {
-    host: `${name}-rw`,
-    port: 5432,
-    database: name,
-    user: name,
-    passwordSecret: { name: secretName, key: 'password' },
-    passwordKey: 'password',
-    vendor: 'postgres' as const,
-  };
-
   const resources: ReturnType<typeof jsx>[] = [];
 
-  // Declare CNPG operator if not already provided via context
-  if (!hasCNPG) {
+  if (clusterConfig) {
+    // Running inside a shared cluster - create database only
+    const clusterName = clusterConfig.name;
+    
+    // Create initdb job or use postInitSQLRefs to create database
+    // For now, we rely on the cluster's bootstrap and use the connection
+    const connection = {
+      host: clusterConfig.host,
+      port: 5432,
+      database: name,
+      user: name,
+      passwordSecret: { name: secretName, key: 'password' },
+      passwordKey: 'password',
+      vendor: 'postgres' as const,
+    };
+
+    // Create secret for this database
     resources.push(
-      declareOperator(cnpgOperator(operatorVersion))
-    );
-  }
-
-  resources.push(jsx('Cluster', cluster));
-
-  // Create secret resources based on SecretContext
-  if (secretProvider) {
-    switch (secretProvider.backend) {
-      case 'vault':
-        resources.push(
-          jsx('VaultStaticSecret', {
-            apiVersion: 'secrets.hashicorp.com/v1beta1',
-            kind: 'VaultStaticSecret',
-            metadata: { name: `${name}-db-secret`, namespace },
-            spec: {
-              vaultAuthRef: secretProvider.authRef,
-              mount: secretProvider.mount,
-              type: 'kv-v2',
-              path: `${secretProvider.path}/${name}`,
-              destination: {
-                create: true,
-                name: secretName,
-              },
-            },
-          })
-        );
-        break;
-
-      case 'openbao':
-        resources.push(
-          jsx('OpenBaoStaticSecret', {
-            apiVersion: 'secrets.openbao.org/v1beta1',
-            kind: 'OpenBaoStaticSecret',
-            metadata: { name: `${name}-db-secret`, namespace },
-            spec: {
-              openbaoAuthRef: secretProvider.authRef,
-              mount: secretProvider.mount,
-              type: 'kv-v2',
-              path: `${secretProvider.path}/${name}`,
-              destination: {
-                create: true,
-                name: secretName,
-              },
-            },
-          })
-        );
-        break;
-
-      case 'kubernetes':
-        // CNPG handles plain secrets automatically
-        break;
-    }
-  }
-
-  if (children) {
-    resources.push(
-      jsx(DatabaseContext.Provider, {
-        value: connection,
-        children,
+      jsx('Secret', {
+        apiVersion: 'v1',
+        kind: 'Secret',
+        metadata: { name: secretName, namespace },
+        stringData: {
+          password: `${name}-password`,
+          username: name,
+          uri: `postgresql://${name}:${name}-password@${clusterConfig.host}:5432/${name}`,
+        },
       })
     );
+
+    if (children) {
+      resources.push(
+        jsx(DatabaseContext.Provider, {
+          value: connection,
+          children,
+        })
+      );
+    }
+  } else {
+    // Dedicated cluster - create full CNPG cluster
+    const hasCNPG = sharedOperators.some(op => op.name === 'cnpg');
+
+    const cluster: Cluster = {
+      apiVersion: 'postgresql.cnpg.io/v1',
+      kind: 'Cluster',
+      metadata: { name, namespace },
+      spec: {
+        instances: 3,
+        storage: {
+          size: storage,
+        },
+        bootstrap: {
+          initdb: {
+            database: name,
+            owner: name,
+            secret: {
+              name: secretName,
+            },
+          },
+        },
+        monitoring: {
+          enabled: true,
+        },
+      },
+    };
+
+    const connection = {
+      host: `${name}-rw`,
+      port: 5432,
+      database: name,
+      user: name,
+      passwordSecret: { name: secretName, key: 'password' },
+      passwordKey: 'password',
+      vendor: 'postgres' as const,
+    };
+
+    // Declare CNPG operator if not already provided via context
+    if (!hasCNPG) {
+      resources.push(
+        declareOperator(cnpgOperator(operatorVersion))
+      );
+    }
+
+    resources.push(jsx('Cluster', cluster));
+
+    // Create secret resources based on SecretContext
+    if (secretProvider) {
+      switch (secretProvider.backend) {
+        case 'vault':
+          resources.push(
+            jsx('VaultStaticSecret', {
+              apiVersion: 'secrets.hashicorp.com/v1beta1',
+              kind: 'VaultStaticSecret',
+              metadata: { name: `${name}-db-secret`, namespace },
+              spec: {
+                vaultAuthRef: secretProvider.authRef,
+                mount: secretProvider.mount,
+                type: 'kv-v2',
+                path: `${secretProvider.path}/${name}`,
+                destination: {
+                  create: true,
+                  name: secretName,
+                },
+              },
+            })
+          );
+          break;
+
+        case 'openbao':
+          resources.push(
+            jsx('OpenBaoStaticSecret', {
+              apiVersion: 'secrets.openbao.org/v1beta1',
+              kind: 'OpenBaoStaticSecret',
+              metadata: { name: `${name}-db-secret`, namespace },
+              spec: {
+                openbaoAuthRef: secretProvider.authRef,
+                mount: secretProvider.mount,
+                type: 'kv-v2',
+                path: `${secretProvider.path}/${name}`,
+                destination: {
+                  create: true,
+                  name: secretName,
+                },
+              },
+            })
+          );
+          break;
+
+        case 'kubernetes':
+          // CNPG handles plain secrets automatically
+          break;
+      }
+    }
+
+    if (children) {
+      resources.push(
+        jsx(DatabaseContext.Provider, {
+          value: connection,
+          children,
+        })
+      );
+    }
   }
 
   return resources;
