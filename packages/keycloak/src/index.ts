@@ -51,12 +51,12 @@ export function KeycloakInstance(props: KeycloakInstanceProps) {
   const dbContext = useContext(DatabaseContext);
   const dbHost = explicitDbHost ?? dbContext?.host;
   const dbUsernameSecret = explicitUsernameSecret ?? (dbContext && {
-    name: dbContext.passwordSecret,
+    name: dbContext.passwordSecret.name,
     key: 'username',
   });
   const dbPasswordSecret = explicitPasswordSecret ?? (dbContext && {
-    name: dbContext.passwordSecret,
-    key: dbContext.passwordKey,
+    name: dbContext.passwordSecret.name,
+    key: dbContext.passwordKey || 'password',
   });
 
   const keycloak: Keycloak = {
