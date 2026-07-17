@@ -9,6 +9,8 @@ export interface DatabaseProps {
   storage?: string;
   /** Operator version override. If not set, reads from OperatorContext or uses default. */
   operatorVersion?: string;
+  /** Password for the database. Required unless using Vault/OpenBao via SecretContext. */
+  password?: string;
   children?: unknown;
 }
 
@@ -16,15 +18,15 @@ export interface DatabaseProps {
  * CloudNativePG PostgreSQL database.
  *
  * By default, creates a dedicated 3-instance HA cluster for this database.
- * When wrapped in a `<Cluster>` component, creates a database within
- * the shared cluster instead.
+ * When wrapped in a `<Cluster>` component, reuses the shared cluster's
+ * connection info instead of creating a dedicated cluster.
  *
  * @example
  * // Dedicated cluster (default)
  * <Database name="app-db" storage="10Gi" />
  *
  * @example
- * // Shared cluster
+ * // Shared cluster - reuses connection, does not provision a new database
  * <Cluster name="main" storage="100Gi">
  *   <Database name="user-db" />
  *   <Database name="order-db" />
@@ -42,6 +44,7 @@ export function Database(props: DatabaseProps) {
     namespace = 'default',
     storage = '10Gi',
     operatorVersion,
+    password,
     children,
   } = props;
 
@@ -53,7 +56,7 @@ export function Database(props: DatabaseProps) {
   const resources: ReturnType<typeof jsx>[] = [];
 
   if (clusterConfig) {
-    // Running inside a shared cluster - create database only
+    // Running inside a shared cluster - reuse connection info
     const connection = {
       host: clusterConfig.host,
       port: 5432,
@@ -108,32 +111,63 @@ export function Database(props: DatabaseProps) {
           break;
 
         case 'kubernetes':
-          // Fall through to plain Secret
-        default:
+          if (!password) {
+            throw new Error(
+              `Database "${name}" requires a password prop when using Kubernetes secrets. ` +
+              'Either provide a password or use Vault/OpenBao via SecretContext.'
+            );
+          }
           resources.push(
             jsx('Secret', {
               apiVersion: 'v1',
               kind: 'Secret',
               metadata: { name: secretName, namespace },
               stringData: {
-                password: `${name}-password`,
+                password,
                 username: name,
-                uri: `postgresql://${name}:${name}-password@${clusterConfig.host}:5432/${name}`,
+                uri: `postgresql://${name}:${password}@${clusterConfig.host}:5432/${name}`,
+              },
+            })
+          );
+          break;
+
+        default:
+          if (!password) {
+            throw new Error(
+              `Database "${name}" requires a password prop. ` +
+              'Either provide a password or use Vault/OpenBao via SecretContext.'
+            );
+          }
+          resources.push(
+            jsx('Secret', {
+              apiVersion: 'v1',
+              kind: 'Secret',
+              metadata: { name: secretName, namespace },
+              stringData: {
+                password,
+                username: name,
+                uri: `postgresql://${name}:${password}@${clusterConfig.host}:5432/${name}`,
               },
             })
           );
       }
     } else {
-      // No SecretContext - create plain Secret
+      // No SecretContext - require explicit password
+      if (!password) {
+        throw new Error(
+          `Database "${name}" requires a password prop. ` +
+          'Either provide a password or use Vault/OpenBao via SecretContext.'
+        );
+      }
       resources.push(
         jsx('Secret', {
           apiVersion: 'v1',
           kind: 'Secret',
           metadata: { name: secretName, namespace },
           stringData: {
-            password: `${name}-password`,
+            password,
             username: name,
-            uri: `postgresql://${name}:${name}-password@${clusterConfig.host}:5432/${name}`,
+            uri: `postgresql://${name}:${password}@${clusterConfig.host}:5432/${name}`,
           },
         })
       );

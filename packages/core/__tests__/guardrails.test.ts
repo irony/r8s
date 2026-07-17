@@ -29,6 +29,8 @@ describe('Guardrails', () => {
       const result = runGuardrails(resources, [requireNetworkPolicies]);
       expect(result.passed).toBe(true);
       expect(result.errors).toHaveLength(0);
+      expect(result.warnings).toHaveLength(0);
+      expect(result.info).toHaveLength(0);
     });
 
     it('should fail when a namespace is missing NetworkPolicy', () => {

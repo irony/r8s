@@ -8,7 +8,7 @@ export interface GuardrailRule {
   description: string;
   /** Severity level */
   severity: 'error' | 'warning' | 'info';
-  /** Test function - returns true if rule passes */
+  /** Test function - returns empty array if rule passes, ValidationError[] if it fails */
   test: (resources: KubernetesResource[]) => ValidationError[];
 }
 
@@ -87,7 +87,7 @@ export const requireResourceLimits: GuardrailRule = {
 
 /** Check that all resources have required labels */
 export const requireLabels = (requiredLabels: string[]): GuardrailRule => ({
-  id: 'require-labels',
+  id: `require-labels-${requiredLabels.sort().join('-')}`,
   description: `All resources must have labels: ${requiredLabels.join(', ')}`,
   severity: 'warning',
   test: (resources) => {
@@ -226,9 +226,10 @@ export const defaultGuardrails: GuardrailRule[] = [
 export function runGuardrails(
   resources: KubernetesResource[],
   rules: GuardrailRule[] = defaultGuardrails
-): { passed: boolean; errors: ValidationError[]; warnings: ValidationError[] } {
+): { passed: boolean; errors: ValidationError[]; warnings: ValidationError[]; info: ValidationError[] } {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
+  const info: ValidationError[] = [];
 
   for (const rule of rules) {
     const ruleErrors = rule.test(resources);
@@ -237,6 +238,8 @@ export function runGuardrails(
         errors.push(error);
       } else if (rule.severity === 'warning') {
         warnings.push(error);
+      } else if (rule.severity === 'info') {
+        info.push(error);
       }
     }
   }
@@ -245,5 +248,6 @@ export function runGuardrails(
     passed: errors.length === 0,
     errors,
     warnings,
+    info,
   };
 }
