@@ -304,8 +304,12 @@ export default () => (
       host="api.example.com"
       replicas={3}
       tls={{ secretName: 'api-tls', clusterIssuer: 'letsencrypt' }}
-      env={{ LOG_LEVEL: 'info' }}
-      secrets={{ DATABASE_URL: 'api-secrets' }}
+      env={[
+        {
+          name: 'DATABASE_URL',
+          value: 'postgresql://app-db-rw:5432/app-db',
+        },
+      ]}
     />
 
     <App
