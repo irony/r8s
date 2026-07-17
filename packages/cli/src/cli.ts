@@ -10,6 +10,7 @@ interface CliOptions {
   help?: boolean;
   template?: string;
   operators?: string;
+  strategy?: 'github-actions' | 'flux-controller';
 }
 
 function parseArgs(args: string[]): CliOptions {
@@ -26,6 +27,8 @@ function parseArgs(args: string[]): CliOptions {
       options.template = args[++i];
     } else if (arg === '--operators') {
       options.operators = args[++i];
+    } else if (arg === '--strategy' || arg === '-s') {
+      options.strategy = args[++i] as 'github-actions' | 'flux-controller';
     } else if (arg === '--help' || arg === '-h') {
       options.help = true;
     }
@@ -49,7 +52,9 @@ Options:
   --out, -o <path>       Output file path (default: stdout)
   --template, -t <name>  Template for init (basic, fullstack) [default: basic]
   --operators <list>     Comma-separated list of operators to include
-                         (cert-manager, vault, keycloak, external-dns)
+  --strategy, -s <name>  Deployment strategy:
+                         - github-actions: Render YAML in CI (default)
+                         - flux-controller: Keep .tsx files, render in-cluster
   --help, -h             Show this help message
 
 Examples:
@@ -59,6 +64,7 @@ Examples:
   r8s init
   r8s init my-project
   r8s init my-project --template fullstack
+  r8s init my-project --strategy flux-controller
   r8s init my-project --operators cert-manager,vault
 `);
 }
@@ -93,9 +99,14 @@ async function findEntryFile(entryPath?: string): Promise<string> {
   );
 }
 
-const VALID_OPERATORS = ['cert-manager', 'vault', 'keycloak', 'external-dns'];
+const VALID_OPERATORS = ['cert-manager', 'vault', 'keycloak', 'external-dns', 'redis', 'gateway', 'monitoring', 'clickhouse', 'logging', 'loki'];
 
-async function initProject(projectName: string, template: string, operators?: string[]): Promise<void> {
+async function initProject(
+  projectName: string,
+  template: string,
+  strategy: 'github-actions' | 'flux-controller' = 'github-actions',
+  operators?: string[]
+): Promise<void> {
   const projectDir = resolve(projectName);
 
   if (existsSync(projectDir)) {
@@ -114,6 +125,7 @@ async function initProject(projectName: string, template: string, operators?: st
   }
 
   console.log(`Creating r8s project: ${projectName}`);
+  console.log(`Deployment strategy: ${strategy}`);
 
   // Create directory structure
   mkdirSync(join(projectDir, 'k8s'), { recursive: true });
@@ -127,17 +139,20 @@ async function initProject(projectName: string, template: string, operators?: st
   // Add operator packages if requested
   if (operators) {
     for (const op of operators) {
-      dependencies[`@r8s/recipes-${op}`] = '^0.1.0';
+      dependencies[`@r8s/${op}`] = '^0.1.0';
     }
+  }
+
+  const scripts: Record<string, string> = {};
+  if (strategy === 'github-actions') {
+    scripts['render-k8s'] = 'r8s render';
   }
 
   const packageJson = {
     name: projectName,
     version: '0.1.0',
     private: true,
-    scripts: {
-      'render-k8s': 'r8s render',
-    },
+    scripts,
     dependencies,
     devDependencies: {
       '@r8s/cli': '^0.1.0',
@@ -174,193 +189,36 @@ async function initProject(projectName: string, template: string, operators?: st
   );
 
   // Create k8s/r8s.tsx based on template
-  let reactNetesContent: string;
+  let r8sContent: string;
 
   if (template === 'fullstack') {
-    reactNetesContent = `import { Postgres, CustomIngress } from '@r8s/recipes';
-
-export default function App() {
-  return (
-    <>
-      {/* Database - uses external secret for credentials */}
-      <Postgres
-        name="app-db"
-        namespace="production"
-        database="myapp"
-        user="myapp"
-        passwordSecretName="app-db-credentials"
-        storage="10Gi"
-      />
-
-      {/* Backend API */}
-      <deployment
-        apiVersion="apps/v1"
-        kind="Deployment"
-        metadata={{ name: 'api', namespace: 'production', labels: { app: 'api' } }}
-        spec={{
-          replicas: 3,
-          selector: { matchLabels: { app: 'api' } },
-          template: {
-            metadata: { labels: { app: 'api' } },
-            spec: {
-              containers: [{
-                name: 'api',
-                image: 'myapp/api:latest',
-                ports: [{ containerPort: 3000 }],
-                env: [{
-                  name: 'DATABASE_URL',
-                  valueFrom: {
-                    secretKeyRef: {
-                      name: 'app-db-credentials',
-                      key: 'uri',
-                    },
-                  },
-                }],
-              }],
-            },
-          },
-        }}
-      />
-
-      <service
-        apiVersion="v1"
-        kind="Service"
-        metadata={{ name: 'api', namespace: 'production' }}
-        spec={{
-          type: 'ClusterIP',
-          selector: { app: 'api' },
-          ports: [{ port: 80, targetPort: 3000 }],
-        }}
-      />
-
-      {/* Frontend */}
-      <deployment
-        apiVersion="apps/v1"
-        kind="Deployment"
-        metadata={{ name: 'frontend', namespace: 'production', labels: { app: 'frontend' } }}
-        spec={{
-          replicas: 2,
-          selector: { matchLabels: { app: 'frontend' } },
-          template: {
-            metadata: { labels: { app: 'frontend' } },
-            spec: {
-              containers: [{
-                name: 'frontend',
-                image: 'myapp/frontend:latest',
-                ports: [{ containerPort: 80 }],
-              }],
-            },
-          },
-        }}
-      />
-
-      <service
-        apiVersion="v1"
-        kind="Service"
-        metadata={{ name: 'frontend', namespace: 'production' }}
-        spec={{
-          type: 'ClusterIP',
-          selector: { app: 'frontend' },
-          ports: [{ port: 80, targetPort: 80 }],
-        }}
-      />
-
-      {/* Ingress */}
-      <CustomIngress
-        name="app-ingress"
-        namespace="production"
-        host="app.example.com"
-        serviceName="frontend"
-        servicePort={80}
-        tlsSecretName="app-tls"
-      />
-    </>
-  );
-}
-`;
+    r8sContent = generateFullstackTemplate(strategy);
   } else {
-    // Basic template
-    reactNetesContent = `import { Postgres, CustomIngress } from '@r8s/recipes';
-
-export default function App() {
-  return (
-    <>
-      {/* Database - uses external secret for credentials */}
-      <Postgres
-        name="app-db"
-        namespace="default"
-        database="myapp"
-        user="myapp"
-        passwordSecretName="app-db-credentials"
-        storage="10Gi"
-      />
-
-      <deployment
-        apiVersion="apps/v1"
-        kind="Deployment"
-        metadata={{ name: 'app', labels: { app: 'app' } }}
-        spec={{
-          replicas: 2,
-          selector: { matchLabels: { app: 'app' } },
-          template: {
-            metadata: { labels: { app: 'app' } },
-            spec: {
-              containers: [{
-                name: 'app',
-                image: 'myapp/app:latest',
-                ports: [{ containerPort: 3000 }],
-                env: [{
-                  name: 'DATABASE_URL',
-                  valueFrom: {
-                    secretKeyRef: {
-                      name: 'app-db-credentials',
-                      key: 'uri',
-                    },
-                  },
-                }],
-              }],
-            },
-          },
-        }}
-      />
-
-      <service
-        apiVersion="v1"
-        kind="Service"
-        metadata={{ name: 'app' }}
-        spec={{
-          type: 'ClusterIP',
-          selector: { app: 'app' },
-          ports: [{ port: 80, targetPort: 3000 }],
-        }}
-      />
-
-      <CustomIngress
-        name="app-ingress"
-        host="app.example.com"
-        serviceName="app"
-        servicePort={80}
-        tlsSecretName="app-tls"
-      />
-    </>
-  );
-}
-`;
+    r8sContent = generateBasicTemplate(strategy);
   }
 
   writeFileSync(
     join(projectDir, 'k8s', 'r8s.tsx'),
-    reactNetesContent,
+    r8sContent,
     'utf-8'
   );
 
   // Create .gitignore
-  const gitignore = `node_modules/
+  const gitignore = strategy === 'github-actions'
+    ? `node_modules/
 dist/
 # Ignore rendered manifests except in k8s directory
 *.yaml
 !k8s/*.yaml
 !.github/
+`
+    : `node_modules/
+dist/
+# Keep .tsx files, Flux renders them in-cluster
+*.yaml
+!k8s/*.yaml
+!.github/
+!flux/
 `;
 
   writeFileSync(
@@ -369,7 +227,102 @@ dist/
     'utf-8'
   );
 
-  // Create GitHub Actions workflow
+  // Create deployment strategy files
+  if (strategy === 'github-actions') {
+    createGitHubActionsWorkflow(projectDir);
+  } else {
+    createFluxControllerFiles(projectDir, projectName);
+  }
+
+  // Create README.md
+  const readme = generateReadme(projectName, strategy);
+
+  writeFileSync(
+    join(projectDir, 'README.md'),
+    readme,
+    'utf-8'
+  );
+
+  console.log(`\n✅ Project created: ${projectName}`);
+  console.log(`\nDeployment strategy: ${strategy}`);
+  
+  if (strategy === 'github-actions') {
+    console.log(`\nNext steps:`);
+    console.log(`  cd ${projectName}`);
+    console.log(`  npm install`);
+    console.log(`  npm run render-k8s`);
+    console.log(`\nGitHub Actions will auto-render on push to main.`);
+  } else {
+    console.log(`\nNext steps:`);
+    console.log(`  cd ${projectName}`);
+    console.log(`  npm install`);
+    console.log(`  git init && git add . && git commit -m "init"`);
+    console.log(`  # Push to a Git repository`);
+    console.log(`  # Configure FluxCD to point to your repo`);
+    console.log(`\nFluxCD will render .tsx files in-cluster.`);
+    console.log(`See flux/ directory for example manifests.`);
+  }
+}
+
+function generateBasicTemplate(strategy: string): string {
+  const fluxComment = strategy === 'flux-controller'
+    ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
+    : '';
+
+  return `${fluxComment}import { App } from '@r8s/recipes';
+
+export default () => (
+  <App
+    name="myapp"
+    image="myapp/web:v1.2.3"
+    host="myapp.example.com"
+  />
+);
+`;
+}
+
+function generateFullstackTemplate(strategy: string): string {
+  const fluxComment = strategy === 'flux-controller'
+    ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
+    : '';
+
+  return `${fluxComment}import { App, Database } from '@r8s/recipes';
+
+export default () => (
+  <>
+    <Database
+      name="app-db"
+      namespace="production"
+      storage="10Gi"
+    />
+
+    <App
+      name="api"
+      namespace="production"
+      image="myapp/api:v1.2.3"
+      port={3000}
+      host="api.example.com"
+      replicas={3}
+      tls={{ secretName: 'api-tls', clusterIssuer: 'letsencrypt' }}
+      env={{ LOG_LEVEL: 'info' }}
+      secrets={{ DATABASE_URL: 'api-secrets' }}
+    />
+
+    <App
+      name="frontend"
+      namespace="production"
+      image="myapp/frontend:v1.2.3"
+      port={80}
+      host="app.example.com"
+      replicas={2}
+      tls={{ secretName: 'app-tls', clusterIssuer: 'letsencrypt' }}
+    />
+  </>
+);
+`;
+}
+
+function createGitHubActionsWorkflow(projectDir: string): void {
   mkdirSync(join(projectDir, '.github', 'workflows'), { recursive: true });
 
   const workflowContent = `name: Render Kubernetes Manifests
@@ -428,11 +381,139 @@ jobs:
     workflowContent,
     'utf-8'
   );
+}
 
-  // Create README.md
-  const readme = `# ${projectName}
+function createFluxControllerFiles(projectDir: string, projectName: string): void {
+  // Create flux/ directory with example manifests
+  mkdirSync(join(projectDir, 'flux'), { recursive: true });
 
-Generated with r8s.
+  const gitRepository = `apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: ${projectName}
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/your-org/${projectName}
+  ref:
+    branch: main
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ${projectName}
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./k8s/rendered
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: ${projectName}
+`;
+
+  writeFileSync(
+    join(projectDir, 'flux', 'gitrepository.yaml'),
+    gitRepository,
+    'utf-8'
+  );
+
+  const webhook = `apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: ${projectName}-webhook
+  namespace: flux-system
+spec:
+  type: github
+  events:
+    - ping
+    - push
+  secretRef:
+    name: ${projectName}-webhook-token
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      name: ${projectName}
+      namespace: flux-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${projectName}-webhook-token
+  namespace: flux-system
+type: Opaque
+stringData:
+  token: "replace-me-with-20-char-random-string"
+`;
+
+  writeFileSync(
+    join(projectDir, 'flux', 'webhook.yaml'),
+    webhook,
+    'utf-8'
+  );
+
+  const readme = `# FluxCD Setup for ${projectName}
+
+## Prerequisites
+
+1. FluxCD installed on your cluster
+2. r8s-controller image available (or build your own)
+
+## Setup
+
+### 1. Configure FluxCD
+
+Apply the manifests in this directory:
+
+\`\`\`bash
+kubectl apply -f flux/gitrepository.yaml
+kubectl apply -f flux/webhook.yaml
+\`\`\`
+
+### 2. Configure GitHub Webhook
+
+1. Go to your repository → Settings → Webhooks
+2. Add webhook:
+   - Payload URL: \`https://flux-webhook.yourdomain.com/hook/flux-system/${projectName}-webhook\`
+   - Content type: \`application/json\`
+   - Secret: (the token from flux/webhook.yaml)
+   - Events: Push
+
+### 3. Configure r8s-controller
+
+The r8s-controller runs as an init container in the Flux source-controller.
+
+See https://github.com/r8s-io/r8s/tree/main/packages/flux-controller for setup instructions.
+
+## How It Works
+
+1. You push .tsx files to git
+2. GitHub webhook triggers Flux reconciliation
+3. Flux clones repo to /data
+4. r8s-controller renders TSX → YAML to /data/rendered
+5. Flux Kustomization applies rendered YAML
+
+## Local Development
+
+\`\`\`bash
+# Render locally for testing
+npm install
+npx r8s render --out k8s/manifest.yaml
+\`\`\`
+`;
+
+  writeFileSync(
+    join(projectDir, 'flux', 'README.md'),
+    readme,
+    'utf-8'
+  );
+}
+
+function generateReadme(projectName: string, strategy: string): string {
+  if (strategy === 'github-actions') {
+    return `# ${projectName}
+
+Generated with r8s (GitHub Actions strategy).
 
 ## Getting Started
 
@@ -440,7 +521,7 @@ Generated with r8s.
 # Install dependencies
 npm install
 
-# Render Kubernetes manifests
+# Render Kubernetes manifests locally
 npm run render-k8s
 
 # Or use the CLI directly
@@ -456,37 +537,83 @@ npx r8s render --out k8s/manifest.yaml
 │   └── workflows/
 │       └── render.yaml   # Auto-render on push
 ├── k8s/
-│   ├── r8s.tsx    # Your Kubernetes components
-│   └── manifest.yaml       # Generated YAML (auto-committed)
+│   ├── r8s.tsx          # Your Kubernetes components
+│   └── manifest.yaml     # Generated YAML (auto-committed)
 ├── package.json
 └── tsconfig.json
 \`\`\`
 
-## Editing Manifests
+## Deployment Strategy: GitHub Actions
 
-Open \`k8s/r8s.tsx\` and edit your components. Run \`npm run render-k8s\` to generate YAML.
+This project uses **GitHub Actions** to render TSX → YAML:
 
-## GitHub Actions
-
-This project includes a GitHub Actions workflow that automatically renders your Kubernetes manifests on every push to \`main\` or \`master\`. The rendered \`k8s/manifest.yaml\` is automatically committed back to the repository.
+1. You edit \`k8s/r8s.tsx\` and push to \`main\`
+2. GitHub Actions renders the TSX to \`k8s/manifest.yaml\`
+3. The rendered YAML is committed back to the repository
+4. Your GitOps tool (Flux, ArgoCD) picks up the YAML and applies it
 
 ## Learn More
 
-- [r8s Documentation](https://github.com/yourusername/r8s)
-- [Recipes](https://github.com/yourusername/r8s/tree/main/packages/recipes)
+- [r8s Documentation](https://github.com/r8s-io/r8s)
+- [FluxCD Integration](https://github.com/r8s-io/r8s/tree/main/packages/flux-controller)
 `;
+  } else {
+    return `# ${projectName}
 
-  writeFileSync(
-    join(projectDir, 'README.md'),
-    readme,
-    'utf-8'
-  );
+Generated with r8s (Flux Controller strategy).
 
-  console.log(`\n✅ Project created: ${projectName}`);
-  console.log(`\nNext steps:`);
-  console.log(`  cd ${projectName}`);
-  console.log(`  npm install`);
-  console.log(`  npm run render-k8s`);
+## Getting Started
+
+\`\`\`bash
+# Install dependencies
+npm install
+
+# Render locally for testing
+npx r8s render --out k8s/manifest.yaml
+\`\`\`
+
+## Project Structure
+
+\`\`\`
+.
+├── flux/
+│   ├── gitrepository.yaml   # Flux GitRepository manifest
+│   ├── webhook.yaml         # Webhook receiver for instant sync
+│   └── README.md           # Flux setup instructions
+├── k8s/
+│   └── r8s.tsx            # Your Kubernetes components (kept as .tsx)
+├── package.json
+└── tsconfig.json
+\`\`\`
+
+## Deployment Strategy: Flux Controller
+
+This project uses **FluxCD with r8s-controller** to render TSX → YAML in-cluster:
+
+1. You edit \`k8s/r8s.tsx\` and push to \`main\`
+2. GitHub webhook triggers Flux reconciliation (instant)
+3. Flux clones repo to /data
+4. r8s-controller (init container) renders TSX → YAML to /data/rendered
+5. Flux Kustomization applies rendered YAML to cluster
+
+## Benefits
+
+- **No CI build step** — rendering happens in-cluster
+- **Git is source of truth** — only .tsx files in repo
+- **Instant updates** — webhook triggers reconciliation immediately
+- **Type safety** — catch errors at build time
+
+## Setup
+
+See \`flux/README.md\` for detailed setup instructions.
+
+## Learn More
+
+- [r8s Documentation](https://github.com/r8s-io/r8s)
+- [FluxCD Controller](https://github.com/r8s-io/r8s/tree/main/packages/flux-controller)
+- [FluxCD Webhooks](https://github.com/r8s-io/r8s/tree/main/packages/flux-controller/WEBHOOKS.md)
+`;
+  }
 }
 
 async function main(): Promise<void> {
@@ -503,10 +630,16 @@ async function main(): Promise<void> {
   if (command === 'init') {
     const projectName = args[1] || 'r8s-app';
     const template = options.template || 'basic';
+    const strategy = options.strategy || 'github-actions';
     const operators = options.operators?.split(',').map(op => op.trim()).filter(Boolean);
 
+    if (strategy !== 'github-actions' && strategy !== 'flux-controller') {
+      console.error(`Invalid strategy: ${strategy}. Valid: github-actions, flux-controller`);
+      process.exit(1);
+    }
+
     try {
-      await initProject(projectName, template, operators);
+      await initProject(projectName, template, strategy, operators);
     } catch (error) {
       console.error('Error:', error instanceof Error ? error.message : error);
       process.exit(1);

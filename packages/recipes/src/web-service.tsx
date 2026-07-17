@@ -1,5 +1,5 @@
 import { jsx } from '@r8s/core';
-import { Deployment, Service } from '@r8s/k8s-types';
+import { Deployment, Service, EnvVar } from '@r8s/k8s-types';
 
 export interface WebServiceProps {
   name: string;
@@ -7,8 +7,12 @@ export interface WebServiceProps {
   image: string;
   port?: number;
   replicas?: number;
-  env?: Array<{ name: string; value: string }>;
+  env?: EnvVar[];
   envFrom?: Array<{ secretRef?: { name: string } }>;
+  resources?: {
+    requests?: { cpu?: string; memory?: string };
+    limits?: { cpu?: string; memory?: string };
+  };
 }
 
 /**
@@ -34,6 +38,7 @@ export function WebService(props: WebServiceProps) {
     replicas = 2,
     env = [],
     envFrom = [],
+    resources,
   } = props;
 
   const deployment: Deployment = {
@@ -52,6 +57,7 @@ export function WebService(props: WebServiceProps) {
             ports: [{ containerPort: port }],
             env,
             ...(envFrom.length > 0 && { envFrom }),
+            ...(resources && { resources }),
             livenessProbe: {
               httpGet: { path: '/health', port },
               initialDelaySeconds: 10,

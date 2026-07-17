@@ -6,59 +6,44 @@ Stop writing YAML. Start composing infrastructure.
 
 ```tsx
 // k8s/r8s.tsx
-import { Database, Ingress } from '@r8s/recipes';
+import { App } from '@r8s/recipes';
 
 export default () => (
-  <>
-    <Database name="api-db" storage="20Gi" />
-
-    <deployment
-      apiVersion="apps/v1"
-      kind="Deployment"
-      metadata={{ name: "api" }}
-      spec={{
-        replicas: 3,
-        template: {
-          spec: {
-            containers: [{
-              name: "api",
-              image: "myapp/api:v1.2.3",
-              ports: [{ containerPort: 3000 }]
-            }]
-          }
-        }
-      }}
-    />
-
-    <Ingress
-      host="api.example.com"
-      serviceName="api"
-      tls={{ secretName: "api-tls", clusterIssuer: "letsencrypt" }}
-    />
-  </>
+  <App
+    name="api"
+    image="myapp/api:v1.2.3"
+    host="api.example.com"
+  />
 );
 ```
 
 ```bash
 $ npx r8s render
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: api-db
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api
 ---
-# ... 4 resources rendered from 1 file
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress
+# ... 3 resources rendered from 1 component
 ```
+
+> **Batteries included, escape hatches included.** The `<App>` component above creates a Deployment, Service, and Ingress — all wired together with sensible defaults. Prefer raw Kubernetes? Every API resource is available as a lowercase component: `<deployment>`, `<service>`, `<ingress>`, `<configmap>`, `<secret>`, `<statefulset>`, `<daemonset>`, `<job>`, `<cronjob>`, `<hpa>`, `<pdb>`, `<rbac>` — compose them exactly as you need.
 
 ## Available Packages
 
 | Package | Description | Operators |
 |---------|-------------|-----------|
-| `@r8s/recipes` | Pre-built components (Database, Ingress, App) | cnpg, nginx-ingress |
+| `@r8s/core` | JSX factory + all Kubernetes API components (`<deployment>`, `<service>`, `<ingress>`, etc.) | — |
+| `@r8s/recipes` | Pre-built components (`<App>`, `<Database>`, `<Ingress>`) | cnpg, nginx-ingress |
 | `@r8s/cert-manager` | TLS certificates | cert-manager |
 | `@r8s/vault` | Secret management | vault-secrets-operator |
 | `@r8s/keycloak` | Identity management | keycloak-operator |
@@ -193,35 +178,76 @@ This scaffolds a complete project with:
 Open `k8s/r8s.tsx` and customize:
 
 ```tsx
+import { App } from '@r8s/recipes';
+
+export default () => (
+  <App
+    name="myapp"
+    namespace="production"
+    image="myapp/web:v1.2.3"
+    port={3000}
+    host="myapp.example.com"
+    replicas={3}
+    tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
+    env={[
+      { name: "LOG_LEVEL", value: "info" },
+    ]}
+    resources={{
+      requests: { cpu: "100m", memory: "128Mi" },
+      limits: { cpu: "500m", memory: "512Mi" },
+    }}
+  />
+);
+```
+
+Need something custom? Compose with other components:
+
+```tsx
+import { App, Database } from '@r8s/recipes';
+
+export default () => (
+  <>
+    <Database name="myapp-db" storage="20Gi" />
+
+    <App
+      name="myapp"
+      namespace="production"
+      image="myapp/web:v1.2.3"
+      host="myapp.example.com"
+      tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
+      env={[
+        {
+          name: "DATABASE_URL",
+          value: "postgresql://myapp-db-rw:5432/myapp-db",
+        },
+      ]}
+    />
+  </>
+);
+```
+
+Or drop down to raw components at any level:
+
+```tsx
 import { Database, Ingress } from '@r8s/recipes';
 
-export default function App() {
+export default function CustomApp() {
   return (
     <>
-      <Database
-        name="myapp-db"
-        namespace="production"
-        storage="20Gi"
-      />
+      <Database name="myapp-db" storage="20Gi" />
 
       <deployment
         apiVersion="apps/v1"
         kind="Deployment"
-        metadata={{ name: 'myapp-web', namespace: 'production', labels: { app: 'myapp-web' } }}
+        metadata={{ name: 'myapp-web' }}
         spec={{
           replicas: 3,
-          selector: { matchLabels: { app: 'myapp-web' } },
           template: {
-            metadata: { labels: { app: 'myapp-web' } },
             spec: {
               containers: [{
                 name: 'web',
                 image: 'myapp/web:v1.2.3',
                 ports: [{ containerPort: 3000 }],
-                env: [{
-                  name: 'DATABASE_URL',
-                  value: 'postgresql://myapp-db-rw:5432/myapp-db',
-                }],
               }],
             },
           },
@@ -231,24 +257,18 @@ export default function App() {
       <service
         apiVersion="v1"
         kind="Service"
-        metadata={{ name: 'myapp-web', namespace: 'production' }}
+        metadata={{ name: 'myapp-web' }}
         spec={{
-          type: 'ClusterIP',
           selector: { app: 'myapp-web' },
           ports: [{ port: 80, targetPort: 3000 }],
         }}
       />
 
       <Ingress
-        name="myapp-ingress"
-        namespace="production"
         host="myapp.example.com"
         serviceName="myapp-web"
         servicePort={80}
-        tlsSecretName="myapp-tls"
-        annotations={{
-          'nginx.ingress.kubernetes.io/rate-limit': '100',
-        }}
+        tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
       />
     </>
   );
@@ -823,6 +843,56 @@ r8s/
 - [ ] Diff view between renders
 - [ ] Helm chart generation from components
 - [ ] Plugin system for custom recipes
+
+## Contributing
+
+### Missing Something?
+
+r8s is designed to be extended. If you need a component that doesn't exist yet, it's easy to add:
+
+```tsx
+// packages/my-operator/src/index.ts
+import { declareOperator } from '@r8s/core';
+
+export const myOperator = declareOperator({
+  name: 'my-operator',
+  source: {
+    type: 'helm',
+    chart: 'my-chart',
+    repo: 'https://charts.example.com',
+    version: '1.0.0',
+  },
+});
+
+export function MyComponent(props: { name: string; replicas?: number }) {
+  return (
+    <deployment
+      apiVersion="apps/v1"
+      kind="Deployment"
+      metadata={{ name: props.name }}
+      spec={{
+        replicas: props.replicas || 1,
+        template: {
+          spec: {
+            containers: [{
+              name: 'app',
+              image: 'myapp:latest',
+            }],
+          },
+        },
+      }}
+    />
+  );
+}
+```
+
+1. Create a new package under `packages/`
+2. Export your operator with `declareOperator()`
+3. Export your components as TSX functions
+4. Add tests in `__tests__/`
+5. Open a PR — we review within 24 hours
+
+See existing packages (`packages/recipes`, `packages/redis`, `packages/monitoring`) for patterns and conventions.
 
 ## License
 

@@ -211,95 +211,80 @@ describe('WebService Recipe', () => {
 });
 
 describe('App Recipe', () => {
-  it('should render full stack with database', () => {
+  it('should render app with deployment, service, and ingress', () => {
     const element = jsx(App, {
       name: 'myapp',
-      domain: 'myapp.example.com',
+      host: 'myapp.example.com',
       image: 'myapp:v1',
-      database: true,
-      tls: true,
     });
 
     const result = render(element);
 
-    expect(result.resources.length).toBeGreaterThanOrEqual(3);
+    expect(result.resources.length).toBeGreaterThanOrEqual(2);
     const kinds = result.resources.map((r: any) => r.kind);
-    expect(kinds).toContain('Cluster');
     expect(kinds).toContain('Deployment');
     expect(kinds).toContain('Service');
     expect(kinds).toContain('Ingress');
   });
 
-  it('should declare all required operators for full stack', () => {
+  it('should declare nginx-ingress operator', () => {
     const element = jsx(App, {
       name: 'myapp',
-      domain: 'myapp.example.com',
+      host: 'myapp.example.com',
       image: 'myapp:v1',
-      database: true,
-      tls: true,
     });
 
     const result = render(element);
 
-    expect(result.operators).toHaveLength(3);
     const names = result.operators.map(op => op.name);
-    expect(names).toContain('cnpg');
     expect(names).toContain('nginx-ingress');
+  });
+
+  it('should declare cert-manager when TLS is configured', () => {
+    const element = jsx(App, {
+      name: 'myapp',
+      host: 'myapp.example.com',
+      image: 'myapp:v1',
+      tls: { secretName: 'myapp-tls', clusterIssuer: 'letsencrypt' },
+    });
+
+    const result = render(element);
+
+    const names = result.operators.map(op => op.name);
     expect(names).toContain('cert-manager');
+    expect(names).toContain('nginx-ingress');
   });
 
   it('should not declare cert-manager when TLS is disabled', () => {
     const element = jsx(App, {
       name: 'myapp',
-      domain: 'myapp.example.com',
+      host: 'myapp.example.com',
       image: 'myapp:v1',
-      database: true,
-      tls: false,
     });
 
     const result = render(element);
 
     const names = result.operators.map(op => op.name);
     expect(names).not.toContain('cert-manager');
-    expect(names).toContain('cnpg');
     expect(names).toContain('nginx-ingress');
-  });
-
-  it('should not declare CNPG when database is disabled', () => {
-    const element = jsx(App, {
-      name: 'myapp',
-      domain: 'myapp.example.com',
-      image: 'myapp:v1',
-      database: false,
-      tls: true,
-    });
-
-    const result = render(element);
-
-    const names = result.operators.map(op => op.name);
-    expect(names).not.toContain('cnpg');
-    expect(names).toContain('nginx-ingress');
-    expect(names).toContain('cert-manager');
   });
 
   it('should use shared operators from context without duplication', () => {
     const element = jsx(OperatorContext.Provider, {
       value: [
-        cnpgOperator('1.22.5'),
         certManagerOperator('1.14.0'),
         nginxIngressOperator('1.15.1'),
       ],
       children: jsx(App, {
         name: 'myapp',
-        domain: 'myapp.example.com',
+        host: 'myapp.example.com',
         image: 'myapp:v1',
-        database: true,
-        tls: true,
+        tls: { secretName: 'myapp-tls', clusterIssuer: 'letsencrypt' },
       }),
     });
 
     const result = render(element);
 
-    expect(result.operators).toHaveLength(3);
+    expect(result.operators).toHaveLength(2);
   });
 });
