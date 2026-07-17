@@ -8,6 +8,8 @@ export interface DatabaseConnection {
   database: string;
   username: string;
   passwordSecret: { name: string; key: string };
+  /** Key for the password within the secret (defaults to 'password') */
+  passwordKey?: string;
 }
 
 /** Secret provider configuration */
