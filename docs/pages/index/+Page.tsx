@@ -1,4 +1,4 @@
-import { CodeBlock } from "../components/CodeBlock";
+import { CodeBlock } from "../../components/CodeBlock";
 
 const quickStartCode = `npm install @r8s/core @r8s/recipes`;
 

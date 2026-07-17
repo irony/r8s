@@ -1,5 +1,4 @@
 import "./Layout.css";
-import { Link } from "../components/Link";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,11 +8,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           r8s
         </a>
         <div className="flex gap-6 text-sm">
-          <Link href="/">Overview</Link>
-          <Link href="/core">Core</Link>
-          <Link href="/recipes">Recipes</Link>
-          <Link href="/deployment">Deployment</Link>
-          <Link href="/testing">Testing</Link>
+          <a href="/" className="text-peak/70 hover:text-peak transition-colors">Overview</a>
+          <a href="/core" className="text-peak/70 hover:text-peak transition-colors">Core</a>
+          <a href="/recipes" className="text-peak/70 hover:text-peak transition-colors">Recipes</a>
+          <a href="/deployment" className="text-peak/70 hover:text-peak transition-colors">Deployment</a>
+          <a href="/testing" className="text-peak/70 hover:text-peak transition-colors">Testing</a>
         </div>
       </nav>
       <main className="max-w-4xl mx-auto px-6 py-12">
