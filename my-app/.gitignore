@@ -1,6 +1,0 @@
-node_modules/
-dist/
-# Ignore rendered manifests except in k8s directory
-*.yaml
-!k8s/*.yaml
-!.github/
