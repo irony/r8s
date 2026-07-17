@@ -59,13 +59,15 @@ describe('Guardrails', () => {
           spec: {
             template: {
               spec: {
-                containers: [{
-                  name: 'app',
-                  resources: {
-                    requests: { cpu: '100m', memory: '128Mi' },
-                    limits: { cpu: '500m', memory: '512Mi' },
+                containers: [
+                  {
+                    name: 'app',
+                    resources: {
+                      requests: { cpu: '100m', memory: '128Mi' },
+                      limits: { cpu: '500m', memory: '512Mi' },
+                    },
                   },
-                }],
+                ],
               },
             },
           },
@@ -251,13 +253,15 @@ describe('Guardrails', () => {
           spec: {
             template: {
               spec: {
-                containers: [{
-                  name: 'app',
-                  resources: {
-                    requests: { cpu: '100m' },
-                    limits: { cpu: '500m' },
+                containers: [
+                  {
+                    name: 'app',
+                    resources: {
+                      requests: { cpu: '100m' },
+                      limits: { cpu: '500m' },
+                    },
                   },
-                }],
+                ],
               },
             },
           },

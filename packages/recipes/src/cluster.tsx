@@ -30,15 +30,10 @@ export interface ClusterProps {
  * <Database name="order-db" storage="10Gi" />
  */
 export function Cluster(props: ClusterProps) {
-  const {
-    name,
-    namespace = 'default',
-    storage = '50Gi',
-    children,
-  } = props;
+  const { name, namespace = 'default', storage = '50Gi', children } = props;
 
   const sharedOperators = useContext(OperatorContext);
-  const hasCNPG = sharedOperators.some(op => op.name === 'cnpg');
+  const hasCNPG = sharedOperators.some((op) => op.name === 'cnpg');
 
   const secretName = `${name}-db-credentials`;
 

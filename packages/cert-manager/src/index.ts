@@ -30,16 +30,12 @@ export interface LetsEncryptIssuerProps {
 }
 
 export function LetsEncryptIssuer(props: LetsEncryptIssuerProps) {
-  const {
-    name,
-    email,
-    server = 'production',
-    ingressClass = 'nginx',
-  } = props;
+  const { name, email, server = 'production', ingressClass = 'nginx' } = props;
 
-  const acmeServer = server === 'production'
-    ? 'https://acme-v02.api.letsencrypt.org/directory'
-    : 'https://acme-staging-v02.api.letsencrypt.org/directory';
+  const acmeServer =
+    server === 'production'
+      ? 'https://acme-v02.api.letsencrypt.org/directory'
+      : 'https://acme-staging-v02.api.letsencrypt.org/directory';
 
   const issuer: ClusterIssuer = {
     apiVersion: 'cert-manager.io/v1',
@@ -50,11 +46,13 @@ export function LetsEncryptIssuer(props: LetsEncryptIssuerProps) {
         server: acmeServer,
         email,
         privateKeySecretRef: { name: `${name}-account-key` },
-        solvers: [{
-          http01: {
-            ingress: { class: ingressClass },
+        solvers: [
+          {
+            http01: {
+              ingress: { class: ingressClass },
+            },
           },
-        }],
+        ],
       },
     },
   };

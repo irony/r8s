@@ -33,10 +33,7 @@ export function declareOperator(operator: Operator): r8sElement {
 
 /** Check if an element is an operator declaration */
 export function isOperatorDeclaration(element: r8sElement): boolean {
-  return (
-    typeof element.type === 'symbol' &&
-    element.type === OPERATOR_SYMBOL
-  );
+  return typeof element.type === 'symbol' && element.type === OPERATOR_SYMBOL;
 }
 
 /** Extract operator from declaration element */

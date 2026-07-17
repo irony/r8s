@@ -78,12 +78,7 @@ async function findEntryFile(entryPath?: string): Promise<string> {
     return resolved;
   }
 
-  const defaults = [
-    'k8s/r8s.tsx',
-    'k8s/r8s.tsx',
-    'k8s/index.tsx',
-    'infra/r8s.tsx',
-  ];
+  const defaults = ['k8s/r8s.tsx', 'k8s/r8s.tsx', 'k8s/index.tsx', 'infra/r8s.tsx'];
 
   for (const defaultPath of defaults) {
     const resolved = resolve(defaultPath);
@@ -99,7 +94,18 @@ async function findEntryFile(entryPath?: string): Promise<string> {
   );
 }
 
-const VALID_OPERATORS = ['cert-manager', 'vault', 'keycloak', 'external-dns', 'redis', 'gateway', 'monitoring', 'clickhouse', 'logging', 'loki'];
+const VALID_OPERATORS = [
+  'cert-manager',
+  'vault',
+  'keycloak',
+  'external-dns',
+  'redis',
+  'gateway',
+  'monitoring',
+  'clickhouse',
+  'logging',
+  'loki',
+];
 
 async function initProject(
   projectName: string,
@@ -115,11 +121,11 @@ async function initProject(
 
   // Validate operators if provided
   if (operators && operators.length > 0) {
-    const invalid = operators.filter(op => !VALID_OPERATORS.includes(op));
+    const invalid = operators.filter((op) => !VALID_OPERATORS.includes(op));
     if (invalid.length > 0) {
       throw new Error(
         `Invalid operators: ${invalid.join(', ')}. ` +
-        `Valid operators are: ${VALID_OPERATORS.join(', ')}`
+          `Valid operators are: ${VALID_OPERATORS.join(', ')}`
       );
     }
   }
@@ -197,22 +203,19 @@ async function initProject(
     r8sContent = generateBasicTemplate(strategy);
   }
 
-  writeFileSync(
-    join(projectDir, 'k8s', 'r8s.tsx'),
-    r8sContent,
-    'utf-8'
-  );
+  writeFileSync(join(projectDir, 'k8s', 'r8s.tsx'), r8sContent, 'utf-8');
 
   // Create .gitignore
-  const gitignore = strategy === 'github-actions'
-    ? `node_modules/
+  const gitignore =
+    strategy === 'github-actions'
+      ? `node_modules/
 dist/
 # Ignore rendered manifests except in k8s directory
 *.yaml
 !k8s/*.yaml
 !.github/
 `
-    : `node_modules/
+      : `node_modules/
 dist/
 # Keep .tsx files, Flux renders them in-cluster
 *.yaml
@@ -221,11 +224,7 @@ dist/
 !flux/
 `;
 
-  writeFileSync(
-    join(projectDir, '.gitignore'),
-    gitignore,
-    'utf-8'
-  );
+  writeFileSync(join(projectDir, '.gitignore'), gitignore, 'utf-8');
 
   // Create deployment strategy files
   if (strategy === 'github-actions') {
@@ -237,15 +236,11 @@ dist/
   // Create README.md
   const readme = generateReadme(projectName, strategy);
 
-  writeFileSync(
-    join(projectDir, 'README.md'),
-    readme,
-    'utf-8'
-  );
+  writeFileSync(join(projectDir, 'README.md'), readme, 'utf-8');
 
   console.log(`\n✅ Project created: ${projectName}`);
   console.log(`\nDeployment strategy: ${strategy}`);
-  
+
   if (strategy === 'github-actions') {
     console.log(`\nNext steps:`);
     console.log(`  cd ${projectName}`);
@@ -265,9 +260,10 @@ dist/
 }
 
 function generateBasicTemplate(strategy: string): string {
-  const fluxComment = strategy === 'flux-controller'
-    ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
-    : '';
+  const fluxComment =
+    strategy === 'flux-controller'
+      ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
+      : '';
 
   return `${fluxComment}import { App } from '@r8s/recipes';
 
@@ -282,9 +278,10 @@ export default () => (
 }
 
 function generateFullstackTemplate(strategy: string): string {
-  const fluxComment = strategy === 'flux-controller'
-    ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
-    : '';
+  const fluxComment =
+    strategy === 'flux-controller'
+      ? `// This file stays as .tsx - FluxCD renders it in-cluster via r8s-controller\n`
+      : '';
 
   return `${fluxComment}import { App, Database } from '@r8s/recipes';
 
@@ -376,11 +373,7 @@ jobs:
           git push
 `;
 
-  writeFileSync(
-    join(projectDir, '.github', 'workflows', 'render.yaml'),
-    workflowContent,
-    'utf-8'
-  );
+  writeFileSync(join(projectDir, '.github', 'workflows', 'render.yaml'), workflowContent, 'utf-8');
 }
 
 function createFluxControllerFiles(projectDir: string, projectName: string): void {
@@ -412,11 +405,7 @@ spec:
     name: ${projectName}
 `;
 
-  writeFileSync(
-    join(projectDir, 'flux', 'gitrepository.yaml'),
-    gitRepository,
-    'utf-8'
-  );
+  writeFileSync(join(projectDir, 'flux', 'gitrepository.yaml'), gitRepository, 'utf-8');
 
   const webhook = `apiVersion: notification.toolkit.fluxcd.io/v1
 kind: Receiver
@@ -446,11 +435,7 @@ stringData:
   token: "replace-me-with-20-char-random-string"
 `;
 
-  writeFileSync(
-    join(projectDir, 'flux', 'webhook.yaml'),
-    webhook,
-    'utf-8'
-  );
+  writeFileSync(join(projectDir, 'flux', 'webhook.yaml'), webhook, 'utf-8');
 
   const readme = `# FluxCD Setup for ${projectName}
 
@@ -502,11 +487,7 @@ npx r8s render --out k8s/manifest.yaml
 \`\`\`
 `;
 
-  writeFileSync(
-    join(projectDir, 'flux', 'README.md'),
-    readme,
-    'utf-8'
-  );
+  writeFileSync(join(projectDir, 'flux', 'README.md'), readme, 'utf-8');
 }
 
 function generateReadme(projectName: string, strategy: string): string {
@@ -631,7 +612,10 @@ async function main(): Promise<void> {
     const projectName = args[1] || 'r8s-app';
     const template = options.template || 'basic';
     const strategy = options.strategy || 'github-actions';
-    const operators = options.operators?.split(',').map(op => op.trim()).filter(Boolean);
+    const operators = options.operators
+      ?.split(',')
+      .map((op) => op.trim())
+      .filter(Boolean);
 
     if (strategy !== 'github-actions' && strategy !== 'flux-controller') {
       console.error(`Invalid strategy: ${strategy}. Valid: github-actions, flux-controller`);

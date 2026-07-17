@@ -3,21 +3,15 @@ import { helmOperator } from '@r8s/k8s-types';
 
 /** Grafana Loki declaration */
 export const lokiOperator = (version = '5.47.0') =>
-  helmOperator(
-    'loki',
-    'loki',
-    'https://grafana.github.io/helm-charts',
-    version,
-    {
-      description: 'Grafana Loki - horizontally-scalable, highly-available log aggregation system',
-      namespace: 'loki',
-      crds: [
-        'alertingrules.loki.grafana.com',
-        'recordingrules.loki.grafana.com',
-        'rulerconfigs.loki.grafana.com',
-      ],
-    }
-  );
+  helmOperator('loki', 'loki', 'https://grafana.github.io/helm-charts', version, {
+    description: 'Grafana Loki - horizontally-scalable, highly-available log aggregation system',
+    namespace: 'loki',
+    crds: [
+      'alertingrules.loki.grafana.com',
+      'recordingrules.loki.grafana.com',
+      'rulerconfigs.loki.grafana.com',
+    ],
+  });
 
 export interface LokiStackProps {
   name: string;
@@ -57,14 +51,7 @@ export interface LokiStackProps {
  * />
  */
 export function LokiStack(props: LokiStackProps) {
-  const {
-    name,
-    namespace = 'loki',
-    storage,
-    replication,
-    limits,
-    resources,
-  } = props;
+  const { name, namespace = 'loki', storage, replication, limits, resources } = props;
 
   const stack = {
     apiVersion: 'loki.grafana.com/v1',
@@ -73,10 +60,12 @@ export function LokiStack(props: LokiStackProps) {
     spec: {
       size: '1x.extra-small',
       storage: {
-        schemas: [{
-          version: 'v13',
-          effectiveDate: '2024-01-01',
-        }],
+        schemas: [
+          {
+            version: 'v13',
+            effectiveDate: '2024-01-01',
+          },
+        ],
         ...(storage && {
           type: storage.type,
           ...(storage.bucket && { bucket: storage.bucket }),
@@ -139,20 +128,16 @@ export interface AlertingRuleProps {
  * AlertingRule for Loki-based alerting.
  */
 export function AlertingRule(props: AlertingRuleProps) {
-  const {
-    name,
-    namespace = 'loki',
-    groups,
-  } = props;
+  const { name, namespace = 'loki', groups } = props;
 
   const rule = {
     apiVersion: 'loki.grafana.com/v1',
     kind: 'AlertingRule',
     metadata: { name, namespace },
     spec: {
-      groups: groups.map(g => ({
+      groups: groups.map((g) => ({
         name: g.name,
-        rules: g.rules.map(r => ({
+        rules: g.rules.map((r) => ({
           alert: r.alert,
           expr: r.expr,
           ...(r.for && { for: r.for }),

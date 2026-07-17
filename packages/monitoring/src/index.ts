@@ -52,13 +52,7 @@ export interface ServiceMonitorProps {
  * />
  */
 export function ServiceMonitor(props: ServiceMonitorProps) {
-  const {
-    name,
-    namespace = 'default',
-    labels,
-    selector,
-    endpoints,
-  } = props;
+  const { name, namespace = 'default', labels, selector, endpoints } = props;
 
   const monitor = {
     apiVersion: 'monitoring.coreos.com/v1',
@@ -66,7 +60,7 @@ export function ServiceMonitor(props: ServiceMonitorProps) {
     metadata: { name, namespace, labels },
     spec: {
       selector,
-      endpoints: endpoints.map(e => ({
+      endpoints: endpoints.map((e) => ({
         port: e.port,
         ...(e.path && { path: e.path }),
         ...(e.interval && { interval: e.interval }),
@@ -98,21 +92,17 @@ export interface PrometheusRuleProps {
  * PrometheusRule for alerting rules.
  */
 export function PrometheusRule(props: PrometheusRuleProps) {
-  const {
-    name,
-    namespace = 'default',
-    groups,
-  } = props;
+  const { name, namespace = 'default', groups } = props;
 
   const rule = {
     apiVersion: 'monitoring.coreos.com/v1',
     kind: 'PrometheusRule',
     metadata: { name, namespace },
     spec: {
-      groups: groups.map(g => ({
+      groups: groups.map((g) => ({
         name: g.name,
         ...(g.interval && { interval: g.interval }),
-        rules: g.rules.map(r => ({
+        rules: g.rules.map((r) => ({
           alert: r.alert,
           expr: r.expr,
           ...(r.for && { for: r.for }),
@@ -144,13 +134,7 @@ export interface PodMonitorProps {
  * PodMonitor for scraping pods directly (without Service).
  */
 export function PodMonitor(props: PodMonitorProps) {
-  const {
-    name,
-    namespace = 'default',
-    labels,
-    selector,
-    podMetricsEndpoints,
-  } = props;
+  const { name, namespace = 'default', labels, selector, podMetricsEndpoints } = props;
 
   const monitor = {
     apiVersion: 'monitoring.coreos.com/v1',
@@ -158,7 +142,7 @@ export function PodMonitor(props: PodMonitorProps) {
     metadata: { name, namespace, labels },
     spec: {
       selector,
-      podMetricsEndpoints: podMetricsEndpoints.map(e => ({
+      podMetricsEndpoints: podMetricsEndpoints.map((e) => ({
         port: e.port,
         ...(e.path && { path: e.path }),
         ...(e.interval && { interval: e.interval }),

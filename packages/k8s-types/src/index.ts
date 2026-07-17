@@ -268,13 +268,7 @@ export interface PersistentVolumeClaimSpec {
 
 // Union type for all Kubernetes resources
 export type KubernetesResource =
-  | Deployment
-  | StatefulSet
-  | Service
-  | ConfigMap
-  | Secret
-  | Ingress
-  | PersistentVolumeClaim;
+  Deployment | StatefulSet | Service | ConfigMap | Secret | Ingress | PersistentVolumeClaim;
 
 // Operator CRDs
 export * from './cert-manager';

@@ -18,7 +18,7 @@ export class r8sValidationError extends Error {
   errors: ValidationError[];
 
   constructor(errors: ValidationError[]) {
-    const message = errors.map(e => `[${e.code}] ${e.message}`).join('\n');
+    const message = errors.map((e) => `[${e.code}] ${e.message}`).join('\n');
     super(message);
     this.name = 'r8sValidationError';
     this.errors = errors;
@@ -76,7 +76,8 @@ export function validateResource(resource: KubernetesResource): ValidationError[
         message: `Resource name "${resource.metadata.name}" is not a valid DNS subdomain name`,
         resource: kind,
         field: 'metadata.name',
-        suggestion: 'Use lowercase letters, numbers, and hyphens only. Must start and end with alphanumeric.',
+        suggestion:
+          'Use lowercase letters, numbers, and hyphens only. Must start and end with alphanumeric.',
       });
     }
 
@@ -154,7 +155,8 @@ export function validateIngress(resource: KubernetesResource): ValidationError[]
           message: `Ingress "${resource.metadata?.name}" TLS config ${i} is missing secretName`,
           resource: 'Ingress',
           field: `spec.tls[${i}].secretName`,
-          suggestion: 'Add secretName referencing a TLS certificate secret, or use cert-manager with clusterIssuer annotation',
+          suggestion:
+            'Add secretName referencing a TLS certificate secret, or use cert-manager with clusterIssuer annotation',
         });
       }
     }
@@ -253,7 +255,11 @@ export function validateDeployment(resource: KubernetesResource): ValidationErro
       field: 'spec.template',
       suggestion: 'Add template with metadata.labels and spec.containers',
     });
-  } else if (!spec.template.spec || !spec.template.spec.containers || spec.template.spec.containers.length === 0) {
+  } else if (
+    !spec.template.spec ||
+    !spec.template.spec.containers ||
+    spec.template.spec.containers.length === 0
+  ) {
     errors.push({
       code: 'MISSING_CONTAINERS',
       message: `Deployment "${resource.metadata?.name}" has no containers`,
@@ -328,7 +334,8 @@ export function checkDuplicates(resources: KubernetesResource[]): ValidationErro
         message: `Duplicate ${kind} "${name}" in namespace "${namespace}" (found ${indices.length} times)`,
         resource: kind,
         field: 'metadata.name',
-        suggestion: 'Each resource must have a unique name within its namespace and kind. Consider using different names or namespaces.',
+        suggestion:
+          'Each resource must have a unique name within its namespace and kind. Consider using different names or namespaces.',
       });
     }
   }

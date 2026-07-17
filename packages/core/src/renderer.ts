@@ -19,12 +19,7 @@ export function useContext<T>(context: Context<T>): T {
 }
 
 function isr8sElement(value: unknown): value is r8sElement {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'type' in value &&
-    'props' in value
-  );
+  return value !== null && typeof value === 'object' && 'type' in value && 'props' in value;
 }
 
 function flattenChildren(children: unknown): unknown[] {
@@ -39,7 +34,10 @@ function flattenChildren(children: unknown): unknown[] {
   return [children];
 }
 
-function renderChildren(children: unknown): { resources: KubernetesResource[]; operators: Operator[] } {
+function renderChildren(children: unknown): {
+  resources: KubernetesResource[];
+  operators: Operator[];
+} {
   const flattened = flattenChildren(children);
   const resources: KubernetesResource[] = [];
   const operators: Operator[] = [];
@@ -55,7 +53,10 @@ function renderChildren(children: unknown): { resources: KubernetesResource[]; o
   return { resources, operators };
 }
 
-function renderElement(element: r8sElement): { resources: KubernetesResource[]; operators: Operator[] } {
+function renderElement(element: r8sElement): {
+  resources: KubernetesResource[];
+  operators: Operator[];
+} {
   // Handle operator declarations
   if (isOperatorDeclaration(element)) {
     const operator = getOperator(element);
@@ -77,30 +78,30 @@ function renderElement(element: r8sElement): { resources: KubernetesResource[]; 
       value: unknown;
       children?: unknown;
     };
-    
+
     // Push context value
     const hadPreviousValue = contextStack.has(contextId);
     const previousValue = contextStack.get(contextId);
     contextStack.set(contextId, value);
-    
+
     // Render children with new context
     const result = renderChildren(children);
-    
+
     // If the context value contains operators, include them
     if (Array.isArray(value)) {
-      const ops = value.filter((v): v is Operator => 
-        v && typeof v === 'object' && 'name' in v && 'source' in v
+      const ops = value.filter(
+        (v): v is Operator => v && typeof v === 'object' && 'name' in v && 'source' in v
       );
       result.operators.unshift(...ops);
     }
-    
+
     // Restore previous context
     if (hadPreviousValue) {
       contextStack.set(contextId, previousValue);
     } else {
       contextStack.delete(contextId);
     }
-    
+
     return result;
   }
 
@@ -123,11 +124,7 @@ function renderElement(element: r8sElement): { resources: KubernetesResource[]; 
   }
 
   // Handle built-in Kubernetes resource components
-  if (
-    typeof element.type === 'string' &&
-    element.props &&
-    typeof element.props === 'object'
-  ) {
+  if (typeof element.type === 'string' && element.props && typeof element.props === 'object') {
     const props = element.props as Record<string, unknown>;
 
     // If this is a raw Kubernetes resource (has apiVersion and kind)
@@ -142,17 +139,17 @@ function renderElement(element: r8sElement): { resources: KubernetesResource[]; 
 export function render(element: r8sElement): RenderResult {
   // Clear context stack before rendering
   contextStack.clear();
-  
+
   const { resources, operators } = renderElement(element);
-  
+
   // Deduplicate operators by name, keeping the last version
   const operatorMap = new Map<string, Operator>();
   for (const op of operators) {
     operatorMap.set(op.name, op);
   }
-  
-  return { 
+
+  return {
     resources,
-    operators: Array.from(operatorMap.values())
+    operators: Array.from(operatorMap.values()),
   };
 }

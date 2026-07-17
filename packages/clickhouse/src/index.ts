@@ -31,13 +31,16 @@ export interface ClickHouseClusterProps {
   zookeeper?: {
     nodes?: Array<{ host: string; port?: number }>;
   };
-  users?: Record<string, {
-    password?: string;
-    profile?: string;
-    quota?: string;
-    networks?: { ip?: string[] };
-    grants?: { query?: string[] };
-  }>;
+  users?: Record<
+    string,
+    {
+      password?: string;
+      profile?: string;
+      quota?: string;
+      networks?: { ip?: string[] };
+      grants?: { query?: string[] };
+    }
+  >;
   profiles?: Record<string, Record<string, string>>;
   quotas?: Record<string, Record<string, string>>;
   templates?: {
@@ -97,12 +100,14 @@ export function ClickHouseCluster(props: ClickHouseClusterProps) {
     spec: {
       configuration: {
         ...(cluster && {
-          clusters: [{
-            name: 'cluster',
-            ...(cluster.layout && {
-              layout: cluster.layout,
-            }),
-          }],
+          clusters: [
+            {
+              name: 'cluster',
+              ...(cluster.layout && {
+                layout: cluster.layout,
+              }),
+            },
+          ],
         }),
         ...(zookeeper && {
           zookeeper: {

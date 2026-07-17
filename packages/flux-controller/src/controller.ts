@@ -28,7 +28,8 @@ export interface RenderResult {
 const log = {
   info: (msg: string) => console.log('[r8s-controller] ' + msg),
   error: (msg: string) => console.error('[r8s-controller] ERROR: ' + msg),
-  debug: (msg: string, verbose?: boolean) => verbose && console.log('[r8s-controller] DEBUG: ' + msg),
+  debug: (msg: string, verbose?: boolean) =>
+    verbose && console.log('[r8s-controller] DEBUG: ' + msg),
 };
 
 /** Find all r8s entry files */
@@ -66,44 +67,41 @@ export function renderFile(filePath: string, outputDir: string, verbose?: boolea
 
     const script = [
       "import { render } from '@r8s/core';",
-      "async function main() {",
-      "  try {",
+      'async function main() {',
+      '  try {',
       "    const m = await import('" + filePath.replace(/\\/g, '/') + "');",
-      "    const Component = m.default || m;",
+      '    const Component = m.default || m;',
       "    if (typeof Component !== 'function') {",
       "      console.log(JSON.stringify({ error: 'Not a function' }));",
-      "      process.exit(1);",
-      "    }",
-      "    const result = render(Component());",
-      "    console.log(JSON.stringify({",
-      "      success: true,",
-      "      resources: result.resources.length,",
-      "      operators: result.operators?.length || 0,",
-      "      yaml: result.resources",
-      "    }));",
-      "  } catch (err) {",
-      "    console.log(JSON.stringify({ error: err.message }));",
-      "    process.exit(1);",
-      "  }",
-      "}",
-      "main();",
+      '      process.exit(1);',
+      '    }',
+      '    const result = render(Component());',
+      '    console.log(JSON.stringify({',
+      '      success: true,',
+      '      resources: result.resources.length,',
+      '      operators: result.operators?.length || 0,',
+      '      yaml: result.resources',
+      '    }));',
+      '  } catch (err) {',
+      '    console.log(JSON.stringify({ error: err.message }));',
+      '    process.exit(1);',
+      '  }',
+      '}',
+      'main();',
     ].join('\n');
 
-    const result = execSync(
-      'npx tsx --eval "' + script.replace(/"/g, '\\"') + '"',
-      {
-        encoding: 'utf-8',
-        cwd: dirname(filePath),
-        timeout: 60000,
-        env: {
-          ...process.env,
-          NODE_PATH: resolve(process.cwd(), 'node_modules'),
-        },
-      }
-    );
+    const result = execSync('npx tsx --eval "' + script.replace(/"/g, '\\"') + '"', {
+      encoding: 'utf-8',
+      cwd: dirname(filePath),
+      timeout: 60000,
+      env: {
+        ...process.env,
+        NODE_PATH: resolve(process.cwd(), 'node_modules'),
+      },
+    });
 
     const lines = result.trim().split('\n');
-    const jsonLine = lines.find(l => l.startsWith('{')) || '{}';
+    const jsonLine = lines.find((l) => l.startsWith('{')) || '{}';
     const parsed = JSON.parse(jsonLine);
 
     if (parsed.error) {
@@ -142,53 +140,61 @@ export function resourcesToYAML(resources: any[]): string {
     return '# No resources generated\n';
   }
 
-  return resources
-    .map(resource => {
-      const lines: string[] = ['---'];
-      
-      function serialize(obj: any, indent = 0): string[] {
-        const prefix = '  '.repeat(indent);
-        const result: string[] = [];
-        
-        for (const [key, value] of Object.entries(obj)) {
-          if (value === null || value === undefined) {
-            continue;
-          } else if (Array.isArray(value)) {
-            if (value.length === 0) {
-              result.push(prefix + key + ': []');
-            } else if (typeof value[0] === 'object') {
-              result.push(prefix + key + ':');
-              for (const item of value) {
-                result.push(prefix + '-');
-                result.push(...serialize(item, indent + 1));
+  return (
+    resources
+      .map((resource) => {
+        const lines: string[] = ['---'];
+
+        function serialize(obj: any, indent = 0): string[] {
+          const prefix = '  '.repeat(indent);
+          const result: string[] = [];
+
+          for (const [key, value] of Object.entries(obj)) {
+            if (value === null || value === undefined) {
+              continue;
+            } else if (Array.isArray(value)) {
+              if (value.length === 0) {
+                result.push(prefix + key + ': []');
+              } else if (typeof value[0] === 'object') {
+                result.push(prefix + key + ':');
+                for (const item of value) {
+                  result.push(prefix + '-');
+                  result.push(...serialize(item, indent + 1));
+                }
+              } else {
+                result.push(prefix + key + ':');
+                for (const item of value) {
+                  result.push(prefix + '- ' + JSON.stringify(item));
+                }
               }
-            } else {
+            } else if (typeof value === 'object') {
               result.push(prefix + key + ':');
-              for (const item of value) {
-                result.push(prefix + '- ' + JSON.stringify(item));
+              result.push(...serialize(value, indent + 1));
+            } else if (typeof value === 'string') {
+              if (
+                value.includes(':') ||
+                value.includes('#') ||
+                value.startsWith('*') ||
+                value === '' ||
+                value.includes('\n')
+              ) {
+                result.push(prefix + key + ': "' + value.replace(/"/g, '\\"') + '"');
+              } else {
+                result.push(prefix + key + ': ' + value);
               }
-            }
-          } else if (typeof value === 'object') {
-            result.push(prefix + key + ':');
-            result.push(...serialize(value, indent + 1));
-          } else if (typeof value === 'string') {
-            if (value.includes(':') || value.includes('#') || value.startsWith('*') || value === '' || value.includes('\n')) {
-              result.push(prefix + key + ': "' + value.replace(/"/g, '\\"') + '"');
             } else {
               result.push(prefix + key + ': ' + value);
             }
-          } else {
-            result.push(prefix + key + ': ' + value);
           }
-        }
-        
-        return result;
-      }
 
-      lines.push(...serialize(resource));
-      return lines.join('\n');
-    })
-    .join('\n') + '\n';
+          return result;
+        }
+
+        lines.push(...serialize(resource));
+        return lines.join('\n');
+      })
+      .join('\n') + '\n'
+  );
 }
 
 /** Main controller function */
@@ -211,7 +217,10 @@ export async function runController(options: ControllerOptions): Promise<RenderR
   if (entryFiles.length === 0) {
     log.info('No entry files found, creating empty output');
     mkdirSync(output, { recursive: true });
-    writeFileSync(join(output, 'README.md'), '# r8s rendered output\n\nNo .tsx entry files found.\n');
+    writeFileSync(
+      join(output, 'README.md'),
+      '# r8s rendered output\n\nNo .tsx entry files found.\n'
+    );
     return [];
   }
 
@@ -221,13 +230,21 @@ export async function runController(options: ControllerOptions): Promise<RenderR
     results.push(result);
 
     if (result.success) {
-      log.info('OK ' + relative(source, file) + ' -> ' + relative(output, result.outputFile!) + ' (' + result.resources + ' resources)');
+      log.info(
+        'OK ' +
+          relative(source, file) +
+          ' -> ' +
+          relative(output, result.outputFile!) +
+          ' (' +
+          result.resources +
+          ' resources)'
+      );
     } else {
       log.error('FAIL ' + relative(source, file) + ': ' + result.error);
     }
   }
 
-  const success = results.filter(r => r.success).length;
+  const success = results.filter((r) => r.success).length;
   const totalResources = results.reduce((sum, r) => sum + (r.resources || 0), 0);
   const totalOperators = results.reduce((sum, r) => sum + (r.operators || 0), 0);
 
@@ -274,11 +291,11 @@ Example:
   }
 
   runController(options as ControllerOptions)
-    .then(results => {
-      const failed = results.filter(r => !r.success).length;
+    .then((results) => {
+      const failed = results.filter((r) => !r.success).length;
       process.exit(failed > 0 ? 1 : 0);
     })
-    .catch(err => {
+    .catch((err) => {
       log.error('Controller failed: ' + err.message);
       process.exit(1);
     });

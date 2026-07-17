@@ -56,7 +56,11 @@ export const requireResourceLimits: GuardrailRule = {
     const errors: ValidationError[] = [];
 
     for (const resource of resources as any[]) {
-      if (resource.kind === 'Deployment' || resource.kind === 'StatefulSet' || resource.kind === 'DaemonSet') {
+      if (
+        resource.kind === 'Deployment' ||
+        resource.kind === 'StatefulSet' ||
+        resource.kind === 'DaemonSet'
+      ) {
         const containers = resource.spec?.template?.spec?.containers || [];
         for (const container of containers) {
           if (!container.resources?.requests) {
@@ -74,7 +78,8 @@ export const requireResourceLimits: GuardrailRule = {
               message: `Container "${container.name}" in ${resource.kind} "${resource.metadata?.name}" is missing resource limits`,
               resource: resource.kind,
               field: 'spec.template.spec.containers[].resources.limits',
-              suggestion: 'Add resource.limits with cpu and memory values to prevent resource exhaustion',
+              suggestion:
+                'Add resource.limits with cpu and memory values to prevent resource exhaustion',
             });
           }
         }
@@ -132,7 +137,8 @@ export const noPlaintextSecrets: GuardrailRule = {
                 message: `Secret "${resource.metadata?.name}" contains plaintext value for key "${key}"`,
                 resource: 'Secret',
                 field: `stringData.${key}`,
-                suggestion: 'Use Vault, Sealed Secrets, or external secret management instead of plaintext',
+                suggestion:
+                  'Use Vault, Sealed Secrets, or external secret management instead of plaintext',
               });
             }
           }
@@ -161,7 +167,8 @@ export const requireTLS: GuardrailRule = {
             message: `Ingress "${resource.metadata?.name}" is missing TLS configuration`,
             resource: 'Ingress',
             field: 'spec.tls',
-            suggestion: 'Add TLS configuration with secretName and optionally cert-manager clusterIssuer',
+            suggestion:
+              'Add TLS configuration with secretName and optionally cert-manager clusterIssuer',
           });
         }
       }
@@ -180,10 +187,15 @@ export const noRootContainers: GuardrailRule = {
     const errors: ValidationError[] = [];
 
     for (const resource of resources as any[]) {
-      if (resource.kind === 'Deployment' || resource.kind === 'StatefulSet' || resource.kind === 'DaemonSet' || resource.kind === 'Pod') {
+      if (
+        resource.kind === 'Deployment' ||
+        resource.kind === 'StatefulSet' ||
+        resource.kind === 'DaemonSet' ||
+        resource.kind === 'Pod'
+      ) {
         const podSpec = resource.spec?.template?.spec || resource.spec || {};
         const securityContext = podSpec.securityContext || {};
-        
+
         if (securityContext.runAsUser === 0 || securityContext.runAsRoot === true) {
           errors.push({
             code: 'CONTAINER_RUNS_AS_ROOT',
@@ -226,7 +238,12 @@ export const defaultGuardrails: GuardrailRule[] = [
 export function runGuardrails(
   resources: KubernetesResource[],
   rules: GuardrailRule[] = defaultGuardrails
-): { passed: boolean; errors: ValidationError[]; warnings: ValidationError[]; info: ValidationError[] } {
+): {
+  passed: boolean;
+  errors: ValidationError[];
+  warnings: ValidationError[];
+  info: ValidationError[];
+} {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
   const info: ValidationError[] = [];

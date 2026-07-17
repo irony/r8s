@@ -109,8 +109,8 @@ describe('Ingress Validation', () => {
     } as any;
 
     const errors = validateIngress(ingress);
-    expect(errors.some(e => e.code === 'MISSING_INGRESS_SPEC')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_INGRESS_SPEC')?.suggestion).toContain('rules');
+    expect(errors.some((e) => e.code === 'MISSING_INGRESS_SPEC')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_INGRESS_SPEC')?.suggestion).toContain('rules');
   });
 
   it('should catch missing Ingress rules', () => {
@@ -122,8 +122,8 @@ describe('Ingress Validation', () => {
     } as any;
 
     const errors = validateIngress(ingress);
-    expect(errors.some(e => e.code === 'MISSING_INGRESS_RULES')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_INGRESS_RULES')?.suggestion).toContain('host');
+    expect(errors.some((e) => e.code === 'MISSING_INGRESS_RULES')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_INGRESS_RULES')?.suggestion).toContain('host');
   });
 
   it('should catch missing host in rule', () => {
@@ -137,8 +137,10 @@ describe('Ingress Validation', () => {
     } as any;
 
     const errors = validateIngress(ingress);
-    expect(errors.some(e => e.code === 'MISSING_INGRESS_HOST')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_INGRESS_HOST')?.suggestion).toContain('app.example.com');
+    expect(errors.some((e) => e.code === 'MISSING_INGRESS_HOST')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_INGRESS_HOST')?.suggestion).toContain(
+      'app.example.com'
+    );
   });
 
   it('should catch missing paths in rule', () => {
@@ -152,7 +154,7 @@ describe('Ingress Validation', () => {
     } as any;
 
     const errors = validateIngress(ingress);
-    expect(errors.some(e => e.code === 'MISSING_INGRESS_PATHS')).toBe(true);
+    expect(errors.some((e) => e.code === 'MISSING_INGRESS_PATHS')).toBe(true);
   });
 
   it('should catch missing TLS secret', () => {
@@ -161,14 +163,23 @@ describe('Ingress Validation', () => {
       kind: 'Ingress',
       metadata: { name: 'my-ingress' },
       spec: {
-        rules: [{ host: 'example.com', http: { paths: [{ path: '/', backend: { service: { name: 'svc', port: { number: 80 } } } }] } }],
+        rules: [
+          {
+            host: 'example.com',
+            http: {
+              paths: [{ path: '/', backend: { service: { name: 'svc', port: { number: 80 } } } }],
+            },
+          },
+        ],
         tls: [{}],
       },
     } as any;
 
     const errors = validateIngress(ingress);
-    expect(errors.some(e => e.code === 'MISSING_TLS_SECRET')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_TLS_SECRET')?.suggestion).toContain('cert-manager');
+    expect(errors.some((e) => e.code === 'MISSING_TLS_SECRET')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_TLS_SECRET')?.suggestion).toContain(
+      'cert-manager'
+    );
   });
 });
 
@@ -182,8 +193,8 @@ describe('Service Validation', () => {
     } as any;
 
     const errors = validateService(service);
-    expect(errors.some(e => e.code === 'MISSING_SERVICE_PORTS')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_SERVICE_PORTS')?.suggestion).toContain('port:');
+    expect(errors.some((e) => e.code === 'MISSING_SERVICE_PORTS')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_SERVICE_PORTS')?.suggestion).toContain('port:');
   });
 
   it('should catch invalid port number', () => {
@@ -197,9 +208,9 @@ describe('Service Validation', () => {
     } as any;
 
     const errors = validateService(service);
-    expect(errors.some(e => e.code === 'INVALID_PORT')).toBe(true);
-    expect(errors.find(e => e.code === 'INVALID_PORT')?.message).toContain('70000');
-    expect(errors.find(e => e.code === 'INVALID_PORT')?.suggestion).toContain('65535');
+    expect(errors.some((e) => e.code === 'INVALID_PORT')).toBe(true);
+    expect(errors.find((e) => e.code === 'INVALID_PORT')?.message).toContain('70000');
+    expect(errors.find((e) => e.code === 'INVALID_PORT')?.suggestion).toContain('65535');
   });
 
   it('should catch negative port', () => {
@@ -213,7 +224,7 @@ describe('Service Validation', () => {
     } as any;
 
     const errors = validateService(service);
-    expect(errors.some(e => e.code === 'INVALID_PORT')).toBe(true);
+    expect(errors.some((e) => e.code === 'INVALID_PORT')).toBe(true);
   });
 });
 
@@ -226,7 +237,7 @@ describe('Deployment Validation', () => {
     } as any;
 
     const errors = validateDeployment(deployment);
-    expect(errors.some(e => e.code === 'MISSING_DEPLOYMENT_SPEC')).toBe(true);
+    expect(errors.some((e) => e.code === 'MISSING_DEPLOYMENT_SPEC')).toBe(true);
   });
 
   it('should catch invalid replicas', () => {
@@ -237,13 +248,16 @@ describe('Deployment Validation', () => {
       spec: {
         replicas: -1,
         selector: { matchLabels: { app: 'test' } },
-        template: { metadata: { labels: { app: 'test' } }, spec: { containers: [{ name: 'app', image: 'test' }] } },
+        template: {
+          metadata: { labels: { app: 'test' } },
+          spec: { containers: [{ name: 'app', image: 'test' }] },
+        },
       },
     } as any;
 
     const errors = validateDeployment(deployment);
-    expect(errors.some(e => e.code === 'INVALID_REPLICAS')).toBe(true);
-    expect(errors.find(e => e.code === 'INVALID_REPLICAS')?.message).toContain('-1');
+    expect(errors.some((e) => e.code === 'INVALID_REPLICAS')).toBe(true);
+    expect(errors.find((e) => e.code === 'INVALID_REPLICAS')?.message).toContain('-1');
   });
 
   it('should catch missing selector', () => {
@@ -252,13 +266,16 @@ describe('Deployment Validation', () => {
       kind: 'Deployment',
       metadata: { name: 'my-app' },
       spec: {
-        template: { metadata: { labels: { app: 'test' } }, spec: { containers: [{ name: 'app', image: 'test' }] } },
+        template: {
+          metadata: { labels: { app: 'test' } },
+          spec: { containers: [{ name: 'app', image: 'test' }] },
+        },
       },
     } as any;
 
     const errors = validateDeployment(deployment);
-    expect(errors.some(e => e.code === 'MISSING_SELECTOR')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_SELECTOR')?.suggestion).toContain('matchLabels');
+    expect(errors.some((e) => e.code === 'MISSING_SELECTOR')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_SELECTOR')?.suggestion).toContain('matchLabels');
   });
 
   it('should catch missing containers', () => {
@@ -273,8 +290,8 @@ describe('Deployment Validation', () => {
     } as any;
 
     const errors = validateDeployment(deployment);
-    expect(errors.some(e => e.code === 'MISSING_CONTAINERS')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_CONTAINERS')?.suggestion).toContain('image');
+    expect(errors.some((e) => e.code === 'MISSING_CONTAINERS')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_CONTAINERS')?.suggestion).toContain('image');
   });
 });
 
@@ -282,29 +299,31 @@ describe('Operator Validation', () => {
   it('should catch missing operator name', () => {
     const op = { version: '1.0.0', source: { type: 'helm' } };
     const errors = validateOperator(op);
-    expect(errors.some(e => e.code === 'MISSING_OPERATOR_NAME')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_OPERATOR_NAME')?.suggestion).toContain('cnpg');
+    expect(errors.some((e) => e.code === 'MISSING_OPERATOR_NAME')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_OPERATOR_NAME')?.suggestion).toContain('cnpg');
   });
 
   it('should catch missing operator version', () => {
     const op = { name: 'test-operator', source: { type: 'helm' } };
     const errors = validateOperator(op);
-    expect(errors.some(e => e.code === 'MISSING_OPERATOR_VERSION')).toBe(true);
+    expect(errors.some((e) => e.code === 'MISSING_OPERATOR_VERSION')).toBe(true);
   });
 
   it('should catch invalid semver', () => {
     const op = { name: 'test-operator', version: 'latest', source: { type: 'helm' } };
     const errors = validateOperator(op);
-    expect(errors.some(e => e.code === 'INVALID_SEMVER')).toBe(true);
-    expect(errors.find(e => e.code === 'INVALID_SEMVER')?.message).toContain('latest');
-    expect(errors.find(e => e.code === 'INVALID_SEMVER')?.suggestion).toContain('1.22.5');
+    expect(errors.some((e) => e.code === 'INVALID_SEMVER')).toBe(true);
+    expect(errors.find((e) => e.code === 'INVALID_SEMVER')?.message).toContain('latest');
+    expect(errors.find((e) => e.code === 'INVALID_SEMVER')?.suggestion).toContain('1.22.5');
   });
 
   it('should catch missing operator source', () => {
     const op = { name: 'test-operator', version: '1.0.0' };
     const errors = validateOperator(op);
-    expect(errors.some(e => e.code === 'MISSING_OPERATOR_SOURCE')).toBe(true);
-    expect(errors.find(e => e.code === 'MISSING_OPERATOR_SOURCE')?.suggestion).toContain('manifest');
+    expect(errors.some((e) => e.code === 'MISSING_OPERATOR_SOURCE')).toBe(true);
+    expect(errors.find((e) => e.code === 'MISSING_OPERATOR_SOURCE')?.suggestion).toContain(
+      'manifest'
+    );
   });
 
   it('should pass valid operator', () => {

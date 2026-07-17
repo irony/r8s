@@ -1,6 +1,11 @@
 import { jsx, useContext, declareOperator } from '@r8s/core';
 import { Cluster } from '@r8s/k8s-types';
-import { DatabaseContext, SecretContext, OperatorContext, ClusterContext } from '@r8s/core/defaults';
+import {
+  DatabaseContext,
+  SecretContext,
+  OperatorContext,
+  ClusterContext,
+} from '@r8s/core/defaults';
 import { cnpgOperator } from './operators';
 
 export interface DatabaseProps {
@@ -114,7 +119,7 @@ export function Database(props: DatabaseProps) {
           if (!password) {
             throw new Error(
               `Database "${name}" requires a password prop when using Kubernetes secrets. ` +
-              'Either provide a password or use Vault/OpenBao via SecretContext.'
+                'Either provide a password or use Vault/OpenBao via SecretContext.'
             );
           }
           resources.push(
@@ -135,7 +140,7 @@ export function Database(props: DatabaseProps) {
           if (!password) {
             throw new Error(
               `Database "${name}" requires a password prop. ` +
-              'Either provide a password or use Vault/OpenBao via SecretContext.'
+                'Either provide a password or use Vault/OpenBao via SecretContext.'
             );
           }
           resources.push(
@@ -156,7 +161,7 @@ export function Database(props: DatabaseProps) {
       if (!password) {
         throw new Error(
           `Database "${name}" requires a password prop. ` +
-          'Either provide a password or use Vault/OpenBao via SecretContext.'
+            'Either provide a password or use Vault/OpenBao via SecretContext.'
         );
       }
       resources.push(
@@ -183,7 +188,7 @@ export function Database(props: DatabaseProps) {
     }
   } else {
     // Dedicated cluster - create full CNPG cluster
-    const hasCNPG = sharedOperators.some(op => op.name === 'cnpg');
+    const hasCNPG = sharedOperators.some((op) => op.name === 'cnpg');
 
     const cluster: Cluster = {
       apiVersion: 'postgresql.cnpg.io/v1',
@@ -221,9 +226,7 @@ export function Database(props: DatabaseProps) {
 
     // Declare CNPG operator if not already provided via context
     if (!hasCNPG) {
-      resources.push(
-        declareOperator(cnpgOperator(operatorVersion))
-      );
+      resources.push(declareOperator(cnpgOperator(operatorVersion)));
     }
 
     resources.push(jsx('Cluster', cluster));

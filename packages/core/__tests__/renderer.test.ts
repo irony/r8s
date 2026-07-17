@@ -9,7 +9,7 @@ const createElement = jsx;
 describe('JSX Runtime', () => {
   it('should create a simple element', () => {
     const element = createElement('Deployment', { name: 'test' });
-    
+
     expect(element.type).toBe('Deployment');
     expect(element.props).toEqual({ name: 'test' });
     expect(element.key).toBeNull();
@@ -17,13 +17,13 @@ describe('JSX Runtime', () => {
 
   it('should create element with key', () => {
     const element = createElement('Service', { name: 'svc' }, 'my-key');
-    
+
     expect(element.key).toBe('my-key');
   });
 
   it('should handle Fragment', () => {
     const element = createElement(Fragment, {});
-    
+
     expect(element.type).toBe(Fragment);
   });
 });
@@ -39,10 +39,12 @@ describe('Renderer', () => {
         template: {
           metadata: { labels: { app: 'nginx' } },
           spec: {
-            containers: [{
-              name: 'nginx',
-              image: 'nginx:latest',
-            }],
+            containers: [
+              {
+                name: 'nginx',
+                image: 'nginx:latest',
+              },
+            ],
           },
         },
       },
@@ -65,10 +67,12 @@ describe('Renderer', () => {
         template: {
           metadata: { labels: { app: 'test' } },
           spec: {
-            containers: [{
-              name: 'app',
-              image: 'app:latest',
-            }],
+            containers: [
+              {
+                name: 'app',
+                image: 'app:latest',
+              },
+            ],
           },
         },
       },
@@ -85,10 +89,7 @@ describe('Renderer', () => {
     };
 
     const element = createElement(Fragment, {
-      children: [
-        createElement('Deployment', deployment),
-        createElement('Service', service),
-      ],
+      children: [createElement('Deployment', deployment), createElement('Service', service)],
     });
 
     const result = render(element);
@@ -114,10 +115,12 @@ describe('Renderer', () => {
           template: {
             metadata: { labels: { app: props.name } },
             spec: {
-              containers: [{
-                name: props.name,
-                image: props.image,
-              }],
+              containers: [
+                {
+                  name: props.name,
+                  image: props.image,
+                },
+              ],
             },
           },
         },
@@ -135,7 +138,9 @@ describe('Renderer', () => {
 
     expect(result.resources).toHaveLength(1);
     expect(result.resources[0].metadata.name).toBe('myapp');
-    expect((result.resources[0] as Deployment).spec.template.spec.containers[0].image).toBe('myapp:v1');
+    expect((result.resources[0] as Deployment).spec.template.spec.containers[0].image).toBe(
+      'myapp:v1'
+    );
   });
 
   it('should render function components returning arrays', () => {
@@ -153,10 +158,12 @@ describe('Renderer', () => {
           template: {
             metadata: { labels: { app: props.name } },
             spec: {
-              containers: [{
-                name: 'postgres',
-                image: 'postgres:15',
-              }],
+              containers: [
+                {
+                  name: 'postgres',
+                  image: 'postgres:15',
+                },
+              ],
             },
           },
         },
@@ -212,11 +219,13 @@ describe('Renderer', () => {
           template: {
             metadata: { labels: { app: props.name } },
             spec: {
-              containers: [{
-                name: props.name,
-                image: props.image,
-                ports: [{ containerPort: props.port }],
-              }],
+              containers: [
+                {
+                  name: props.name,
+                  image: props.image,
+                  ports: [{ containerPort: props.port }],
+                },
+              ],
             },
           },
         },
@@ -277,22 +286,19 @@ describe('Renderer', () => {
         template: {
           metadata: { labels: { app: 'test' } },
           spec: {
-            containers: [{
-              name: 'app',
-              image: 'app:latest',
-            }],
+            containers: [
+              {
+                name: 'app',
+                image: 'app:latest',
+              },
+            ],
           },
         },
       },
     };
 
     const element = createElement(Fragment, {
-      children: [
-        null,
-        createElement('Deployment', deployment),
-        false,
-        undefined,
-      ],
+      children: [null, createElement('Deployment', deployment), false, undefined],
     });
 
     const result = render(element);
