@@ -10,6 +10,7 @@ export interface DatabaseConnection {
   passwordSecret: { name: string; key: string };
   /** Key for the password within the secret (defaults to 'password') */
   passwordKey?: string;
+  vendor?: string;
 }
 
 /** Secret provider configuration */

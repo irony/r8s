@@ -12,8 +12,10 @@ export interface RenderResult {
 const contextStack = new Map<symbol, unknown>();
 
 export function useContext<T>(context: Context<T>): T {
-  const value = contextStack.get(context._contextId);
-  return value !== undefined ? (value as T) : context._defaultValue;
+  if (contextStack.has(context._contextId)) {
+    return contextStack.get(context._contextId) as T;
+  }
+  return context._defaultValue;
 }
 
 function isr8sElement(value: unknown): value is r8sElement {
@@ -77,6 +79,7 @@ function renderElement(element: r8sElement): { resources: KubernetesResource[]; 
     };
     
     // Push context value
+    const hadPreviousValue = contextStack.has(contextId);
     const previousValue = contextStack.get(contextId);
     contextStack.set(contextId, value);
     
@@ -92,7 +95,7 @@ function renderElement(element: r8sElement): { resources: KubernetesResource[]; 
     }
     
     // Restore previous context
-    if (previousValue !== undefined) {
+    if (hadPreviousValue) {
       contextStack.set(contextId, previousValue);
     } else {
       contextStack.delete(contextId);

@@ -17,6 +17,8 @@ export interface VaultSecretRef {
   path: string;
   /** Key within the Vault secret (defaults to env var name) */
   key?: string;
+  /** VaultAuth reference name (defaults to 'default') */
+  vaultAuthRef?: string;
 }
 
 export interface WebServiceProps {
@@ -88,7 +90,6 @@ export function WebService(props: WebServiceProps) {
   }
 
   // Secrets from Kubernetes Secrets
-  const secretNames = new Set<string>();
   for (const [envName, ref] of Object.entries(secrets)) {
     if (typeof ref === 'string') {
       // Simple string: secret name, key = env name
@@ -96,14 +97,12 @@ export function WebService(props: WebServiceProps) {
         name: envName,
         valueFrom: { secretKeyRef: { name: ref, key: envName } },
       });
-      secretNames.add(ref);
     } else {
       // Object with explicit secret/key
       envVars.push({
         name: envName,
         valueFrom: { secretKeyRef: { name: ref.secret, key: ref.key || envName } },
       });
-      secretNames.add(ref.secret);
     }
   }
 
@@ -118,6 +117,7 @@ export function WebService(props: WebServiceProps) {
         kind: 'VaultStaticSecret',
         metadata: { name: secretName, namespace },
         spec: {
+          vaultAuthRef: ref.vaultAuthRef || 'default',
           mount: ref.mount,
           type: 'kv-v2',
           path: ref.path,

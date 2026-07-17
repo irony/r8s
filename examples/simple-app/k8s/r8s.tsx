@@ -22,12 +22,9 @@ export default function MyApp() {
         port={3000}
         replicas={3}
         tls={{ secretName: 'myapp-tls', clusterIssuer: 'letsencrypt' }}
-        env={[
-          {
-            name: 'DATABASE_URL',
-            value: 'postgresql://myapp-db-rw:5432/myapp-db',
-          },
-        ]}
+        env={{
+          DATABASE_URL: 'postgresql://myapp-db-rw:5432/myapp-db',
+        }}
       />
     </>
   );
