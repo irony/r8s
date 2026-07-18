@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CodeBlock } from "../../components/CodeBlock";
 
 const projectStructure = `my-project/
@@ -6,7 +7,7 @@ const projectStructure = `my-project/
 │   └── package.json         # With @r8s/* dependencies
 ├── .github/
 │   └── workflows/
-│       └── deploy.yaml      # Optional: pre-render in CI
+│       └── deploy.yaml      # GitHub Actions (optional)
 ├── package.json
 └── tsconfig.json`;
 
@@ -28,6 +29,38 @@ export default (
   />
 );`;
 
+const githubActions = `name: Render & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'k8s/**'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npx r8s render --entry k8s/r8s.tsx --out k8s/rendered/
+
+      - name: Commit rendered manifests
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add k8s/rendered/
+          git diff --quiet && git diff --staged --quiet || \\
+            (git commit -m "chore: render manifests [skip ci]" && git push)`;
+
 const fluxBootstrap = `# If you haven't bootstrapped Flux yet:
 # https://fluxcd.io/flux/installation/bootstrap/github/
 
@@ -41,7 +74,7 @@ flux bootstrap github \\
 const installController = `# Install r8s-controller as init container in Flux
 kubectl apply -f https://raw.githubusercontent.com/irony/r8s/main/packages/flux-controller/deploy.yaml`;
 
-const gitRepo = `apiVersion: source.toolkit.fluxcd.io/v1
+const fluxGitRepo = `apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: my-app
@@ -52,7 +85,7 @@ spec:
   ref:
     branch: main`;
 
-const kustomization = `apiVersion: kustomize.toolkit.fluxcd.io/v1
+const fluxKustomization = `apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: my-app
@@ -159,212 +192,203 @@ export default (
   />
 );`;
 
-const ciRender = `# Optional: Pre-render in CI instead of in-cluster
-# .github/workflows/deploy.yaml
-name: Render & Deploy
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'k8s/**'
-
-jobs:
-  render:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - run: npm ci
-      - run: npx r8s-controller --source=./k8s --output=./rendered
-
-      - name: Commit rendered manifests
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add rendered/
-          git diff --quiet && git diff --staged --quiet || \\
-            (git commit -m "chore: render manifests [skip ci]" && git push)`;
-
 export default function Page() {
+  const [strategy, setStrategy] = useState<'github' | 'flux'>('flux');
+
   return (
     <div className="space-y-12">
       <div className="space-y-4">
         <h1 className="text-4xl tracking-tight">Deployment</h1>
         <p className="text-xl text-cloud/80">
-          Deploy with GitOps. No CI build step needed — render in-cluster.
+          Choose your deployment strategy. Render in CI or in-cluster.
         </p>
       </div>
 
-      {/* Why r8s-controller */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Why In-Cluster Rendering?</h2>
-        <p className="text-cloud/70 leading-relaxed">
-          With r8s-controller, your TSX files are rendered directly in the cluster. 
-          No need to commit generated YAML to Git. Your repository stays clean — only 
-          TypeScript source code, no rendered artifacts.
-        </p>
-        
-        <div className="grid md:grid-cols-2 gap-6 mt-8">
-          <div className="p-6 rounded-lg border border-white/10">
-            <h3 className="font-serif text-xl mb-3 text-moss">No CI Build Step</h3>
+      {/* Strategy Switch */}
+      <div className="flex rounded-lg border border-white/10 overflow-hidden">
+        <button
+          onClick={() => setStrategy('github')}
+          className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+            strategy === 'github'
+              ? 'bg-moss/20 text-moss border-b-2 border-moss'
+              : 'text-cloud/60 hover:text-cloud/80'
+          }`}
+        >
+          <div className="font-bold">GitHub Actions</div>
+          <div className="text-xs mt-1 opacity-70">Pre-render in CI</div>
+        </button>
+        <button
+          onClick={() => setStrategy('flux')}
+          className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+            strategy === 'flux'
+              ? 'bg-moss/20 text-moss border-b-2 border-moss'
+              : 'text-cloud/60 hover:text-cloud/80'
+          }`}
+        >
+          <div className="font-bold">FluxCD + r8s-controller</div>
+          <div className="text-xs mt-1 opacity-70">Render in-cluster (recommended)</div>
+        </button>
+      </div>
+
+      {/* GitHub Actions Strategy */}
+      {strategy === 'github' && (
+        <div className="space-y-12">
+          <div className="p-6 rounded-lg border border-white/10 bg-spruce/20">
+            <h3 className="font-serif text-xl mb-3">GitHub Actions</h3>
             <p className="text-cloud/70 text-sm">
-              Rendering happens in-cluster via init container. 
-              Push TSX, get YAML applied automatically.
+              Render TSX to YAML in CI, then commit the output. Works with any GitOps tool 
+              (ArgoCD, FluxCD, etc.) that reads YAML from Git.
             </p>
           </div>
-          <div className="p-6 rounded-lg border border-white/10">
-            <h3 className="font-serif text-xl mb-3 text-moss">Git Stays Clean</h3>
+
+          <div className="space-y-6">
+            <h2 className="text-2xl tracking-tight">How It Works</h2>
+            <div className="space-y-4 text-sm">
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">1. Push</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">Push r8s.tsx to main</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">2. Render</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">GitHub Actions renders TSX → YAML</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">3. Commit</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">Rendered YAML committed back to repo</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">4. Apply</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">GitOps tool applies YAML to cluster</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-2xl tracking-tight">GitHub Actions Workflow</h2>
+            <p className="text-cloud/70">
+              Add this to <code>.github/workflows/deploy.yaml</code>:
+            </p>
+            <CodeBlock code={githubActions} language="yaml" />
+          </div>
+        </div>
+      )}
+
+      {/* FluxCD Strategy */}
+      {strategy === 'flux' && (
+        <div className="space-y-12">
+          <div className="p-6 rounded-lg border border-moss/30 bg-moss/5">
+            <h3 className="font-serif text-xl mb-3 text-moss">FluxCD + r8s-controller (Recommended)</h3>
             <p className="text-cloud/70 text-sm">
-              Only source code in Git. No generated YAML files 
-              cluttering your repository.
+              Render TSX directly in the cluster. No CI build step needed. Your repository 
+              stays clean — only TypeScript source code.
             </p>
           </div>
-          <div className="p-6 rounded-lg border border-white/10">
-            <h3 className="font-serif text-xl mb-3 text-moss">Automatic Updates</h3>
-            <p className="text-cloud/70 text-sm">
-              Flux watches your git repo and re-renders on every push. 
-              No manual steps.
+
+          <div className="space-y-6">
+            <h2 className="text-2xl tracking-tight">How It Works</h2>
+            <div className="space-y-4 text-sm">
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">1. Push</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">Push r8s.tsx to main</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">2. Clone</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">Flux clones repo to cluster</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">3. Render</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">r8s-controller renders TSX → YAML</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-moss font-mono">4. Apply</span>
+                <span className="text-cloud/40">→</span>
+                <span className="text-cloud/70">Flux applies rendered YAML</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-2xl tracking-tight">Setup</h2>
+            
+            <div className="space-y-4">
+              <h3 className="text-xl">1. Bootstrap Flux</h3>
+              <p className="text-cloud/70">
+                If you haven't already, bootstrap FluxCD. See{" "}
+                <a href="https://fluxcd.io/flux/installation/bootstrap/github/" className="text-moss hover:text-lichen">Flux Bootstrap Docs</a>.
+              </p>
+              <CodeBlock code={fluxBootstrap} language="bash" />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl">2. Install r8s-controller</h3>
+              <p className="text-cloud/70">
+                Add r8s-controller as init container to Flux's source-controller:
+              </p>
+              <CodeBlock code={installController} language="bash" />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl">3. Create GitRepository</h3>
+              <CodeBlock code={fluxGitRepo} language="yaml" />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl">4. Create Kustomization</h3>
+              <CodeBlock code={fluxKustomization} language="yaml" />
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-2xl tracking-tight">Install Operators</h2>
+            <p className="text-cloud/70">
+              Create a separate Kustomization for operators that runs before your app:
             </p>
+            <CodeBlock code={operatorsKustomization} language="yaml" />
+            <CodeBlock code={operatorHelm} language="yaml" />
           </div>
-          <div className="p-6 rounded-lg border border-white/10">
-            <h3 className="font-serif text-xl mb-3 text-moss">Type Safety</h3>
-            <p className="text-cloud/70 text-sm">
-              Catch errors at render time, not deploy time. 
-              Invalid TSX fails before reaching Kubernetes.
+
+          <div className="space-y-6">
+            <h2 className="text-2xl tracking-tight">Wait for Dependencies</h2>
+            <p className="text-cloud/70">
+              Ensure operators are ready before applying your app:
             </p>
+            <CodeBlock code={dependencyWait} language="yaml" />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* How It Works */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">How It Works</h2>
-        <div className="p-6 rounded-lg border border-white/10 bg-spruce/20">
-          <div className="space-y-4 text-sm">
-            <div className="flex items-center gap-4">
-              <span className="text-moss font-mono">1. Git</span>
-              <span className="text-cloud/40">→</span>
-              <span className="text-cloud/70">Push r8s.tsx to main</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-moss font-mono">2. Flux</span>
-              <span className="text-cloud/40">→</span>
-              <span className="text-cloud/70">Detects new commit</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-moss font-mono">3. r8s-controller</span>
-              <span className="text-cloud/40">→</span>
-              <span className="text-cloud/70">Renders TSX → YAML</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-moss font-mono">4. Kubernetes</span>
-              <span className="text-cloud/40">→</span>
-              <span className="text-cloud/70">Applies rendered YAML</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Project Structure */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Project Structure</h2>
-        <p className="text-cloud/70">
-          Your repository only needs TSX source files:
-        </p>
-        <CodeBlock code={projectStructure} language="bash" />
-      </div>
-
-      {/* Your Infrastructure */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Your Infrastructure</h2>
-        <p className="text-cloud/70">
-          Define your infrastructure in <code>k8s/r8s.tsx</code>:
-        </p>
-        <CodeBlock code={r8sTsx} language="tsx" />
-      </div>
-
-      {/* Setup */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Setup</h2>
-        
-        <div className="space-y-4">
-          <h3 className="text-xl">1. Bootstrap Flux (if needed)</h3>
+      {/* Common Sections */}
+      <div className="space-y-12">
+        <div className="space-y-6">
+          <h2 className="text-2xl tracking-tight">Project Structure</h2>
           <p className="text-cloud/70">
-            If you haven't already, bootstrap FluxCD to your cluster. 
-            See <a href="https://fluxcd.io/flux/installation/bootstrap/github/" className="text-moss hover:text-lichen">Flux Bootstrap Documentation</a>.
+            Your repository only needs TSX source files:
           </p>
-          <CodeBlock code={fluxBootstrap} language="bash" />
+          <CodeBlock code={projectStructure} language="bash" />
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-xl">2. Install r8s-controller</h3>
+        <div className="space-y-6">
+          <h2 className="text-2xl tracking-tight">Your Infrastructure</h2>
           <p className="text-cloud/70">
-            Add r8s-controller as an init container to Flux's source-controller:
+            Define your infrastructure in <code>k8s/r8s.tsx</code>:
           </p>
-          <CodeBlock code={installController} language="bash" />
+          <CodeBlock code={r8sTsx} language="tsx" />
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-xl">3. Create GitRepository</h3>
+        <div className="space-y-6">
+          <h2 className="text-2xl tracking-tight">Multi-Environment</h2>
           <p className="text-cloud/70">
-            Tell Flux where your repository is:
+            Use overlays for different environments:
           </p>
-          <CodeBlock code={gitRepo} language="yaml" />
+          <CodeBlock code={multiEnv} language="tsx" />
         </div>
-
-        <div className="space-y-4">
-          <h3 className="text-xl">4. Create Kustomization</h3>
-          <p className="text-cloud/70">
-            Tell Flux to apply the rendered output:
-          </p>
-          <CodeBlock code={kustomization} language="yaml" />
-        </div>
-      </div>
-
-      {/* Operators */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Install Operators</h2>
-        <p className="text-cloud/70">
-          r8s components declare their operator dependencies. Create a separate Kustomization 
-          for operators that runs before your application:
-        </p>
-        <CodeBlock code={operatorsKustomization} language="yaml" />
-        <CodeBlock code={operatorHelm} language="yaml" />
-      </div>
-
-      {/* Dependency Wait */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Wait for Dependencies</h2>
-        <p className="text-cloud/70">
-          Ensure operators are ready before applying your application:
-        </p>
-        <CodeBlock code={dependencyWait} language="yaml" />
-      </div>
-
-      {/* Multi-Environment */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Multi-Environment</h2>
-        <p className="text-cloud/70">
-          Use overlays for different environments:
-        </p>
-        <CodeBlock code={multiEnv} language="tsx" />
-      </div>
-
-      {/* Alternative: CI Render */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Alternative: Pre-render in CI</h2>
-        <p className="text-cloud/70">
-          If you prefer, render in CI and commit the YAML. This works without r8s-controller:
-        </p>
-        <CodeBlock code={ciRender} language="yaml" />
       </div>
 
       {/* Next Steps */}
