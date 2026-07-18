@@ -32,6 +32,31 @@ const log = {
     verbose && console.log('[r8s-controller] DEBUG: ' + msg),
 };
 
+/** Fetch operator manifests from URLs */
+async function fetchOperatorManifests(operators: any[]): Promise<string[]> {
+  const manifests: string[] = [];
+
+  for (const op of operators) {
+    if (op.source?.type !== 'manifest' || !op.source?.url) {
+      continue;
+    }
+
+    try {
+      const response = await fetch(op.source.url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const yaml = await response.text();
+      manifests.push(`# Operator: ${op.name} v${op.version}\n${yaml}`);
+    } catch (error: any) {
+      log.error(`Failed to fetch operator ${op.name}: ${error.message}`);
+      // Continue without this operator — better to have partial output than nothing
+    }
+  }
+
+  return manifests;
+}
+
 /** Find all r8s entry files */
 export function findEntryFiles(sourcePath: string, entryPattern = 'r8s.tsx'): string[] {
   const files: string[] = [];
@@ -58,7 +83,7 @@ export function findEntryFiles(sourcePath: string, entryPattern = 'r8s.tsx'): st
 }
 
 /** Render a TSX file to YAML */
-export function renderFile(filePath: string, outputDir: string, verbose?: boolean): RenderResult {
+export async function renderFile(filePath: string, outputDir: string, verbose?: boolean): Promise<RenderResult> {
   const startTime = Date.now();
   const relativePath = relative(process.cwd(), filePath);
 
@@ -80,6 +105,7 @@ export function renderFile(filePath: string, outputDir: string, verbose?: boolea
       '      success: true,',
       '      resources: result.resources.length,',
       '      operators: result.operators?.length || 0,',
+      '      operatorList: result.operators || [],',
       '      yaml: result.resources',
       '    }));',
       '  } catch (err) {',
@@ -108,11 +134,19 @@ export function renderFile(filePath: string, outputDir: string, verbose?: boolea
       throw new Error(parsed.error);
     }
 
-    const yaml = resourcesToYAML(parsed.yaml || []);
+    // Fetch operator manifests and combine with resources
+    const operatorManifests = parsed.operatorList?.length > 0
+      ? await fetchOperatorManifests(parsed.operatorList)
+      : [];
+
+    const resourceYaml = resourcesToYAML(parsed.yaml || []);
+    const combinedYaml = operatorManifests.length > 0
+      ? operatorManifests.join('\n---\n') + '\n---\n' + resourceYaml
+      : resourceYaml;
 
     const outputFile = join(outputDir, relativePath.replace(/\.tsx$/, '.yaml'));
     mkdirSync(dirname(outputFile), { recursive: true });
-    writeFileSync(outputFile, yaml);
+    writeFileSync(outputFile, combinedYaml);
 
     const duration = Date.now() - startTime;
     log.debug('Rendered ' + parsed.resources + ' resources in ' + duration + 'ms', verbose);
@@ -226,7 +260,7 @@ export async function runController(options: ControllerOptions): Promise<RenderR
 
   const results: RenderResult[] = [];
   for (const file of entryFiles) {
-    const result = renderFile(file, output, verbose);
+    const result = await renderFile(file, output, verbose);
     results.push(result);
 
     if (result.success) {

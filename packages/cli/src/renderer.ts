@@ -1,4 +1,4 @@
-import { render, r8sElement } from '@r8s/core';
+import { render, r8sElement, fetchOperatorManifests } from '@r8s/core';
 import * as yaml from 'js-yaml';
 import { resolve } from 'path';
 
@@ -72,6 +72,11 @@ export async function renderToYaml(entryFile: string): Promise<string> {
     );
   }
 
+  // Fetch operator manifests if any
+  const operatorManifests = renderResult.operators.length > 0
+    ? await fetchOperatorManifests(renderResult.operators)
+    : [];
+
   const yamlDocs = renderResult.resources.map((resource) =>
     yaml.dump(resource, {
       sortKeys: false,
@@ -80,5 +85,6 @@ export async function renderToYaml(entryFile: string): Promise<string> {
     })
   );
 
-  return yamlDocs.join('---\n');
+  // Combine: operators first, then resources
+  return [...operatorManifests, ...yamlDocs].join('---\n');
 }
