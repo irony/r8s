@@ -99,63 +99,52 @@ spec:
   prune: true
   wait: true`;
 
-const operatorsKustomization = `apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: operators
-  namespace: flux-system
-spec:
-  interval: 1h
-  path: ./k8s/operators
-  sourceRef:
-    kind: GitRepository
-    name: my-app
-  prune: true`;
+const operatorYaml = `# Operators are just YAML too
+# Include them in your rendered output or apply separately
 
-const operatorHelm = `# k8s/operators/cnpg.yaml
-apiVersion: source.toolkit.fluxcd.io/v1beta2
-kind: HelmRepository
+# CloudNativePG operator
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: cnpg
-  namespace: flux-system
-spec:
-  interval: 1h
-  url: https://cloudnative-pg.github.io/charts
----
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
-kind: HelmRelease
-metadata:
-  name: cnpg
+  name: cnpg-controller-manager
   namespace: cnpg-system
 spec:
-  interval: 1h
-  chart:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cnpg-controller-manager
+  template:
+    metadata:
+      labels:
+        app: cnpg-controller-manager
     spec:
-      chart: cloudnative-pg
-      version: "0.20.0"
-      sourceRef:
-        kind: HelmRepository
-        name: cnpg
-        namespace: flux-system
-  install:
-    createNamespace: true`;
-
-const dependencyWait = `apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
+      containers:
+        - name: manager
+          image: ghcr.io/cloudnative-pg/cloudnative-pg:1.22.5
+          args:
+            - controller
+            - --leader-elect
+            - --leader-election-id=cnpg-controller-manager
+---
+# cert-manager operator
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: my-app
-  namespace: flux-system
+  name: cert-manager
+  namespace: cert-manager
 spec:
-  interval: 10m
-  path: ./rendered
-  sourceRef:
-    kind: GitRepository
-    name: my-app
-  prune: true
-  wait: true
-  dependsOn:
-    - name: operators
-      namespace: flux-system`;
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cert-manager
+    spec:
+      containers:
+        - name: cert-manager
+          image: quay.io/jetstack/cert-manager-controller:v1.14.0`;
 
 const multiEnv = `// k8s/overlays/staging/r8s.tsx
 import { App } from '@r8s/recipes';
@@ -344,28 +333,28 @@ export default function Page() {
               <CodeBlock code={fluxKustomization} language="yaml" />
             </div>
           </div>
-
-          <div className="space-y-6">
-            <h2 className="text-2xl tracking-tight">Install Operators</h2>
-            <p className="text-cloud/70">
-              Create a separate Kustomization for operators that runs before your app:
-            </p>
-            <CodeBlock code={operatorsKustomization} language="yaml" />
-            <CodeBlock code={operatorHelm} language="yaml" />
-          </div>
-
-          <div className="space-y-6">
-            <h2 className="text-2xl tracking-tight">Wait for Dependencies</h2>
-            <p className="text-cloud/70">
-              Ensure operators are ready before applying your app:
-            </p>
-            <CodeBlock code={dependencyWait} language="yaml" />
-          </div>
         </div>
       )}
 
       {/* Common Sections */}
       <div className="space-y-12">
+        <div className="space-y-6">
+          <h2 className="text-2xl tracking-tight">Operators</h2>
+          <p className="text-cloud/70">
+            r8s components declare their operator dependencies. Operators are just YAML too — 
+            include them in your rendered output or apply them separately. No Helm needed.
+          </p>
+          <CodeBlock code={operatorYaml} language="yaml" />
+          
+          <div className="p-6 rounded-lg border border-moss/30 bg-moss/5">
+            <p className="text-cloud/80">
+              <strong className="text-moss">Coming soon:</strong>{" "}
+              r8s will automatically include operator YAML in the rendered output. 
+              For now, include operator manifests alongside your application YAML.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-6">
           <h2 className="text-2xl tracking-tight">Project Structure</h2>
           <p className="text-cloud/70">
@@ -397,7 +386,7 @@ export default function Page() {
         <p className="text-cloud/70 text-sm leading-relaxed">
           Check out the <a href="/recipes" className="text-moss hover:text-lichen">recipes</a> to find 
           components to deploy, or read about <a href="/operators" className="text-moss hover:text-lichen">operators</a> 
-          to understand what needs to be installed first.
+          to understand what dependencies to include.
         </p>
       </div>
     </div>
