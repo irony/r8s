@@ -5,12 +5,15 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy root package files
 COPY package.json package-lock.json ./
-COPY docs/package.json ./docs/
 
-# Install dependencies
+# Install root dependencies (includes workspace packages)
 RUN npm ci
+
+# Copy docs package files and install docs dependencies
+COPY docs/package.json docs/package-lock.json ./docs/
+RUN cd docs && npm ci
 
 # Copy source
 COPY docs/ ./docs/
