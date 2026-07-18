@@ -9,7 +9,36 @@ export default (
   </>
 );`;
 
-const renderOutput = `import { render } from '@r8s/core';
+const basicYaml = `# Rendered Kubernetes resources
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: app-db
+  namespace: default
+spec:
+  instances: 3
+  storage:
+    size: 10Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: default
+spec:
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app
+                port:
+                  number: 80`;
+
+const renderExample = `import { render } from '@r8s/core';
 
 const result = render(<MyApp />);
 
@@ -18,30 +47,56 @@ console.log(result.resources);
 // [Cluster, Secret, Ingress, Service, ...]
 
 // Required operators (auto-detected)
-console.log(result.operators);
-// [
-//   { name: 'cnpg', source: { type: 'helm', chart: 'cloudnative-pg', ... } },
-//   { name: 'nginx-ingress', source: { type: 'helm', chart: 'ingress-nginx', ... } },
-//   { name: 'cert-manager', source: { type: 'helm', chart: 'cert-manager', ... } }
-// ]`;
+console.log(result.operators);`;
+
+const renderYaml = `# Auto-detected operators
+[
+  {
+    "name": "cnpg",
+    "source": {
+      "type": "helm",
+      "chart": "cloudnative-pg",
+      "repo": "https://cloudnative-pg.github.io/charts",
+      "version": "0.20.0"
+    }
+  },
+  {
+    "name": "nginx-ingress",
+    "source": {
+      "type": "helm",
+      "chart": "ingress-nginx",
+      "repo": "https://kubernetes.github.io/ingress-nginx",
+      "version": "4.9.0"
+    }
+  },
+  {
+    "name": "cert-manager",
+    "source": {
+      "type": "helm",
+      "chart": "cert-manager",
+      "repo": "https://charts.jetstack.io",
+      "version": "1.13.0"
+    }
+  }
+]`;
 
 const installManual = `# Install cert-manager
 helm repo add jetstack https://charts.jetstack.io
-helm install cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --create-namespace \
+helm install cert-manager jetstack/cert-manager \\
+  --namespace cert-manager \\
+  --create-namespace \\
   --set installCRDs=true
 
 # Install nginx-ingress
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install nginx-ingress ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx \
+helm install nginx-ingress ingress-nginx/ingress-nginx \\
+  --namespace ingress-nginx \\
   --create-namespace
 
 # Install CloudNativePG
 helm repo add cnpg https://cloudnative-pg.github.io/charts
-helm install cnpg cnpg/cloudnative-pg \
-  --namespace cnpg-system \
+helm install cnpg cnpg/cloudnative-pg \\
+  --namespace cnpg-system \\
   --create-namespace`;
 
 const fluxExample = `apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -82,6 +137,33 @@ export function MyComponent(props: { name: string }) {
   ];
 }`;
 
+const declareYaml = `# Rendered output includes operator + resources
+[
+  {
+    "type": "operator",
+    "name": "my-operator",
+    "source": {
+      "type": "helm",
+      "chart": "my-chart",
+      "repo": "https://charts.example.com",
+      "version": "1.0.0"
+    }
+  },
+  {
+    "apiVersion": "apps/v1",
+    "kind": "Deployment",
+    "metadata": { "name": "myapp" },
+    "spec": {
+      "replicas": 1,
+      "template": {
+        "spec": {
+          "containers": [{ "name": "app", "image": "myapp" }]
+        }
+      }
+    }
+  }
+]`;
+
 const contextExample = `import { OperatorContext } from '@r8s/core/defaults';
 import { Database, Ingress } from '@r8s/recipes';
 import { cnpgOperator, nginxIngressOperator } from '@r8s/recipes';
@@ -100,11 +182,47 @@ export default function Platform() {
   );
 }`;
 
+const contextYaml = `# Operators provided via context - not duplicated
+# Only resources are rendered
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: app-db
+  namespace: default
+spec:
+  instances: 3
+  storage:
+    size: 10Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: default
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+    - hosts:
+        - app.example.com
+      secretName: app-tls
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app
+                port:
+                  number: 80`;
+
 const dedupExample = `// Component A declares cnpg
 function DatabaseA() {
   return [
     declareOperator(cnpgOperator('1.22.5')),
-    <Cluster name="db-a" ... />,
+    <Cluster name="db-a" storage="10Gi" />,
   ];
 }
 
@@ -112,7 +230,7 @@ function DatabaseA() {
 function DatabaseB() {
   return [
     declareOperator(cnpgOperator('1.22.5')),
-    <Cluster name="db-b" ... />,
+    <Cluster name="db-b" storage="10Gi" />,
   ];
 }
 
@@ -126,6 +244,36 @@ const result = render(
 
 console.log(result.operators);
 // [{ name: 'cnpg', ... }] — deduplicated!`;
+
+const dedupYaml = `# Operators (deduplicated)
+[
+  {
+    "name": "cnpg",
+    "source": {
+      "type": "helm",
+      "chart": "cloudnative-pg",
+      "version": "1.22.5"
+    }
+  }
+]
+
+# Resources (both clusters rendered)
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: db-a
+spec:
+  storage:
+    size: 10Gi
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: db-b
+spec:
+  storage:
+    size: 10Gi`;
 
 export default function Page() {
   return (
@@ -163,8 +311,8 @@ export default function Page() {
           Every r8s component declares its operator dependencies explicitly. When you render your infrastructure, 
           you get a complete list of everything that needs to be installed.
         </p>
-        <CodeBlock code={basicExample} language="tsx" />
-        <CodeBlock code={renderOutput} language="tsx" />
+        <CodeBlock code={basicExample} yaml={basicYaml} language="tsx" />
+        <CodeBlock code={renderExample} yaml={renderYaml} language="tsx" />
       </div>
 
       {/* How It Works */}
@@ -205,7 +353,7 @@ export default function Page() {
         <p className="text-cloud/70">
           Multiple components can declare the same operator. r8s deduplicates them automatically:
         </p>
-        <CodeBlock code={dedupExample} language="tsx" />
+        <CodeBlock code={dedupExample} yaml={dedupYaml} language="tsx" />
       </div>
 
       {/* Context */}
@@ -214,7 +362,7 @@ export default function Page() {
         <p className="text-cloud/70">
           For a complete platform, provide shared operators via context. Components won't duplicate them:
         </p>
-        <CodeBlock code={contextExample} language="tsx" />
+        <CodeBlock code={contextExample} yaml={contextYaml} language="tsx" />
       </div>
 
       {/* Installation */}
@@ -244,7 +392,7 @@ export default function Page() {
         <p className="text-cloud/70">
           Building your own components? Declare their operator dependencies:
         </p>
-        <CodeBlock code={declareOperator} language="tsx" />
+        <CodeBlock code={declareOperator} yaml={declareYaml} language="tsx" />
       </div>
 
       {/* Available Operators */}
