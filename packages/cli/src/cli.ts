@@ -11,6 +11,8 @@ interface CliOptions {
   template?: string;
   operators?: string;
   strategy?: 'github-actions' | 'flux-controller';
+  includeOperators?: boolean;
+  operatorsOnly?: boolean;
 }
 
 function parseArgs(args: string[]): CliOptions {
@@ -29,6 +31,10 @@ function parseArgs(args: string[]): CliOptions {
       options.operators = args[++i];
     } else if (arg === '--strategy' || arg === '-s') {
       options.strategy = args[++i] as 'github-actions' | 'flux-controller';
+    } else if (arg === '--include-operators') {
+      options.includeOperators = true;
+    } else if (arg === '--operators-only') {
+      options.operatorsOnly = true;
     } else if (arg === '--help' || arg === '-h') {
       options.help = true;
     }
@@ -44,12 +50,15 @@ r8s CLI - Render TSX components to Kubernetes YAML
 Usage: r8s [command] [options]
 
 Commands:
-  render    Render k8s/r8s.tsx to YAML (default)
-  init      Scaffold a new r8s project
+  render     Render k8s/r8s.tsx to YAML (default)
+  operators  Render only operator manifests
+  init       Scaffold a new r8s project
 
 Options:
   --entry, -e <path>     Entry file path (default: k8s/r8s.tsx)
   --out, -o <path>       Output file path (default: stdout)
+  --include-operators    Include operator manifests in rendered output
+  --operators-only       Render only operator manifests (with render command)
   --template, -t <name>  Template for init (basic, fullstack) [default: basic]
   --operators <list>     Comma-separated list of operators to include
   --strategy, -s <name>  Deployment strategy:
@@ -60,7 +69,8 @@ Options:
 Examples:
   r8s render
   r8s render --entry ./infra/manifest.tsx
-  r8s render --out ./output/k8s.yaml
+  r8s render --out ./output/k8s.yaml --include-operators
+  r8s operators --out ./operators.yaml
   r8s init
   r8s init my-project
   r8s init my-project --template fullstack
@@ -631,6 +641,28 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'operators') {
+    try {
+      const entryFile = await findEntryFile(options.entry);
+      console.error(`Rendering operators from: ${entryFile}`);
+
+      const { renderToOperatorsYaml } = await import('./renderer.js');
+      const yamlOutput = await renderToOperatorsYaml(entryFile);
+
+      if (options.out) {
+        const { writeFileSync } = await import('fs');
+        writeFileSync(resolve(options.out), yamlOutput, 'utf-8');
+        console.error(`Output written to: ${resolve(options.out)}`);
+      } else {
+        console.log(yamlOutput);
+      }
+    } catch (error) {
+      console.error('Error:', error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
+    return;
+  }
+
   if (command !== 'render') {
     console.error(`Unknown command: ${command}`);
     showHelp();
@@ -641,7 +673,11 @@ async function main(): Promise<void> {
     const entryFile = await findEntryFile(options.entry);
     console.error(`Rendering: ${entryFile}`);
 
-    const yamlOutput = await renderToYaml(entryFile);
+      const { renderToYaml } = await import('./renderer.js');
+    const yamlOutput = await renderToYaml(entryFile, {
+      includeOperators: options.includeOperators,
+      operatorsOnly: options.operatorsOnly,
+    });
 
     if (options.out) {
       const { writeFileSync } = await import('fs');

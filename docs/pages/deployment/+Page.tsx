@@ -45,7 +45,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-      - run: npx r8s render --entry k8s/r8s.tsx --out k8s/rendered/
+      - run: npx r8s render --entry k8s/r8s.tsx --out k8s/rendered/ --include-operators
 
       - name: Commit rendered manifests
         run: |
@@ -134,7 +134,7 @@ export default function Page() {
       <div className="space-y-4">
         <h1 className="text-4xl tracking-tight">Deployment</h1>
         <p className="text-xl text-cloud/80">
-          One file. Everything included. Operators are fetched automatically.
+          Render your infrastructure. Include operators when you want them.
         </p>
       </div>
 
@@ -170,8 +170,8 @@ export default function Page() {
           <div className="p-6 rounded-lg border border-white/10 bg-spruce/20">
             <h3 className="font-serif text-xl mb-3">GitHub Actions</h3>
             <p className="text-cloud/70 text-sm">
-              Render TSX to YAML in CI. Operators are fetched and included automatically.
-              Commit the output — your GitOps tool applies everything.
+              Render TSX to YAML in CI. Use <code>--include-operators</code> to fetch and include 
+              operator manifests. Commit the output — your GitOps tool applies everything.
             </p>
           </div>
 
@@ -186,17 +186,17 @@ export default function Page() {
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">2. Render</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">CI renders TSX → YAML, fetches operators</span>
+                <span className="text-cloud/70">CI renders TSX → YAML</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">3. Commit</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">Rendered YAML (with operators) committed back</span>
+                <span className="text-cloud/70">Rendered YAML committed back to repo</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">4. Apply</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">GitOps tool applies everything to cluster</span>
+                <span className="text-cloud/70">GitOps tool applies YAML to cluster</span>
               </div>
             </div>
           </div>
@@ -215,7 +215,8 @@ export default function Page() {
             <h3 className="font-serif text-xl mb-3 text-moss">FluxCD + r8s-controller (Recommended)</h3>
             <p className="text-cloud/70 text-sm">
               Render TSX directly in the cluster. No CI build step. Your repo stays clean 
-              — just TypeScript source code. Operators are fetched and included automatically.
+              — just TypeScript source code. Use <code>--include-operators</code> when you want 
+              operators in the output.
             </p>
           </div>
 
@@ -235,12 +236,12 @@ export default function Page() {
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">3. Render</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">r8s-controller renders TSX → YAML, fetches operators</span>
+                <span className="text-cloud/70">r8s-controller renders TSX → YAML</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">4. Apply</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">Flux applies everything — resources + operators</span>
+                <span className="text-cloud/70">Flux applies rendered YAML</span>
               </div>
             </div>
           </div>
@@ -282,11 +283,20 @@ export default function Page() {
       {/* Common Sections */}
       <div className="space-y-12">
         <div className="space-y-6">
-          <h2 className="text-2xl tracking-tight">Operators Included Automatically</h2>
+          <h2 className="text-2xl tracking-tight">Including Operators</h2>
           <p className="text-cloud/70">
-            When you use components that need operators (like <code>database</code> for CloudNativePG), 
-            r8s fetches the operator manifests and includes them in the output. No separate installation needed.
+            By default, r8s renders only your resources. Use <code>--include-operators</code> to 
+            fetch and include operator manifests in the output. This is useful when each team 
+            manages their own operators, or when you want a self-contained deployment.
           </p>
+          <CodeBlock code={`# Render with operators included
+npx r8s render --include-operators
+
+# Render only operators (for platform teams)
+npx r8s operators --out operators.yaml
+
+# Render without operators (default)
+npx r8s render`} language="bash" />
           <CodeBlock code={renderedOutput} language="yaml" />
         </div>
 

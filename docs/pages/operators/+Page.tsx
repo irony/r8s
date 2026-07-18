@@ -54,75 +54,46 @@ const renderYaml = `# Auto-detected operators
   {
     "name": "cnpg",
     "source": {
-      "type": "helm",
-      "chart": "cloudnative-pg",
-      "repo": "https://cloudnative-pg.github.io/charts",
-      "version": "0.20.0"
-    }
-  },
-  {
-    "name": "nginx-ingress",
-    "source": {
-      "type": "helm",
-      "chart": "ingress-nginx",
-      "repo": "https://kubernetes.github.io/ingress-nginx",
-      "version": "4.9.0"
+      "type": "manifest",
+      "url": "https://raw.githubusercontent.com/cloudnative-pg/.../cnpg-1.22.5.yaml",
+      "version": "1.22.5"
     }
   },
   {
     "name": "cert-manager",
     "source": {
-      "type": "helm",
-      "chart": "cert-manager",
-      "repo": "https://charts.jetstack.io",
-      "version": "1.13.0"
+      "type": "manifest",
+      "url": "https://github.com/cert-manager/cert-manager/releases/.../cert-manager.yaml",
+      "version": "1.14.0"
     }
   }
 ]`;
 
-const installManual = `# Install cert-manager
-helm repo add jetstack https://charts.jetstack.io
-helm install cert-manager jetstack/cert-manager \\
-  --namespace cert-manager \\
-  --create-namespace \\
-  --set installCRDs=true
+const autoInclude = `# r8s render automatically fetches and includes operators
+# No manual installation needed
 
-# Install nginx-ingress
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install nginx-ingress ingress-nginx/ingress-nginx \\
-  --namespace ingress-nginx \\
-  --create-namespace
-
-# Install CloudNativePG
-helm repo add cnpg https://cloudnative-pg.github.io/charts
-helm install cnpg cnpg/cloudnative-pg \\
-  --namespace cnpg-system \\
-  --create-namespace`;
-
-const fluxExample = `apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
+# Operator: cnpg v1.22.5
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: operators
-  namespace: flux-system
+  name: cnpg-system
+---
+# Your resources
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: app-db
 spec:
-  interval: 1h
-  path: ./operators
-  sourceRef:
-    kind: GitRepository
-    name: infrastructure
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-vars`;
+  storage:
+    size: 10Gi`;
 
 const declareOperator = `import { declareOperator } from '@r8s/core';
 
 export const myOperator = declareOperator({
   name: 'my-operator',
   source: {
-    type: 'helm',
-    chart: 'my-chart',
-    repo: 'https://charts.example.com',
+    type: 'manifest',
+    url: 'https://example.com/operator.yaml',
     version: '1.0.0',
   },
 });
@@ -143,9 +114,8 @@ const declareYaml = `# Rendered output includes operator + resources
     "type": "operator",
     "name": "my-operator",
     "source": {
-      "type": "helm",
-      "chart": "my-chart",
-      "repo": "https://charts.example.com",
+      "type": "manifest",
+      "url": "https://example.com/operator.yaml",
       "version": "1.0.0"
     }
   },
@@ -250,8 +220,8 @@ const dedupYaml = `# Operators (deduplicated)
   {
     "name": "cnpg",
     "source": {
-      "type": "helm",
-      "chart": "cloudnative-pg",
+      "type": "manifest",
+      "url": "https://raw.githubusercontent.com/cloudnative-pg/...",
       "version": "1.22.5"
     }
   }
@@ -309,7 +279,7 @@ export default function Page() {
         <h2 className="text-2xl tracking-tight">The r8s Way</h2>
         <p className="text-cloud/70 leading-relaxed">
           Every r8s component declares its operator dependencies explicitly. When you render your infrastructure, 
-          you get a complete list of everything that needs to be installed.
+          operators are fetched and included automatically — no manual installation needed.
         </p>
         <CodeBlock code={basicExample} yaml={basicYaml} language="tsx" />
         <CodeBlock code={renderExample} yaml={renderYaml} language="tsx" />
@@ -338,13 +308,22 @@ export default function Page() {
           </div>
           <div className="p-6 rounded-lg border border-white/10">
             <div className="text-moss font-mono text-sm mb-3">03</div>
-            <h3 className="font-serif text-xl mb-3">Install</h3>
+            <h3 className="font-serif text-xl mb-3">Include</h3>
             <p className="text-cloud/70 text-sm">
-              You get a flat list of operators with installation instructions. 
-              Install manually, or use FluxCD for GitOps automation.
+              Operator manifests are fetched from their URLs and included in the rendered YAML. 
+              Everything is applied together.
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Auto-Include */}
+      <div className="space-y-6">
+        <h2 className="text-2xl tracking-tight">Operators Included Automatically</h2>
+        <p className="text-cloud/70">
+          When you run <code>r8s render</code>, operators are fetched and prepended to your resources:
+        </p>
+        <CodeBlock code={autoInclude} language="yaml" />
       </div>
 
       {/* Deduplication */}
@@ -365,32 +344,11 @@ export default function Page() {
         <CodeBlock code={contextExample} yaml={contextYaml} language="tsx" />
       </div>
 
-      {/* Installation */}
-      <div className="space-y-6">
-        <h2 className="text-2xl tracking-tight">Installing Operators</h2>
-        
-        <div className="space-y-4">
-          <h3 className="text-xl">Option 1: Manual Installation</h3>
-          <p className="text-cloud/70">
-            Use Helm to install operators directly. r8s provides the exact chart and version:
-          </p>
-          <CodeBlock code={installManual} language="bash" />
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-xl">Option 2: FluxCD (GitOps)</h3>
-          <p className="text-cloud/70">
-            Let FluxCD manage operators automatically. Add them to your Git repository:
-          </p>
-          <CodeBlock code={fluxExample} language="yaml" />
-        </div>
-      </div>
-
       {/* Custom Operators */}
       <div className="space-y-6">
         <h2 className="text-2xl tracking-tight">Creating Custom Operators</h2>
         <p className="text-cloud/70">
-          Building your own components? Declare their operator dependencies:
+          Building your own components? Declare their operator dependencies with manifest URLs:
         </p>
         <CodeBlock code={declareOperator} yaml={declareYaml} language="tsx" />
       </div>
@@ -405,7 +363,7 @@ export default function Page() {
                 <th className="text-left py-3 px-4 text-cloud/60 font-medium">Operator</th>
                 <th className="text-left py-3 px-4 text-cloud/60 font-medium">Package</th>
                 <th className="text-left py-3 px-4 text-cloud/60 font-medium">Purpose</th>
-                <th className="text-left py-3 px-4 text-cloud/60 font-medium">Helm Chart</th>
+                <th className="text-left py-3 px-4 text-cloud/60 font-medium">Source</th>
               </tr>
             </thead>
             <tbody className="text-cloud/80">
@@ -413,49 +371,49 @@ export default function Page() {
                 <td className="py-3 px-4 font-medium">CloudNativePG</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/recipes</td>
                 <td className="py-3 px-4">PostgreSQL clusters</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">cloudnative-pg</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
               <tr className="border-b border-white/5">
                 <td className="py-3 px-4 font-medium">nginx-ingress</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/recipes</td>
                 <td className="py-3 px-4">HTTP routing</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">ingress-nginx</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
               <tr className="border-b border-white/5">
                 <td className="py-3 px-4 font-medium">cert-manager</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/cert-manager</td>
                 <td className="py-3 px-4">TLS certificates</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">cert-manager</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
               <tr className="border-b border-white/5">
                 <td className="py-3 px-4 font-medium">external-dns</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/external-dns</td>
                 <td className="py-3 px-4">DNS management</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">external-dns</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
               <tr className="border-b border-white/5">
                 <td className="py-3 px-4 font-medium">Vault Secrets</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/vault</td>
                 <td className="py-3 px-4">Secret management</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">vault-secrets-operator</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
               <tr className="border-b border-white/5">
                 <td className="py-3 px-4 font-medium">Keycloak</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/keycloak</td>
                 <td className="py-3 px-4">Identity management</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">keycloak-operator</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
               <tr className="border-b border-white/5">
                 <td className="py-3 px-4 font-medium">Redis</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/redis</td>
                 <td className="py-3 px-4">Redis clusters</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">redis-operator</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
               <tr>
                 <td className="py-3 px-4 font-medium">Prometheus</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">@r8s/monitoring</td>
                 <td className="py-3 px-4">Monitoring stack</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">kube-prometheus-stack</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
             </tbody>
           </table>

@@ -6,12 +6,16 @@ interface EntryModule {
   default: r8sElement | ((props: unknown) => r8sElement);
 }
 
-export async function renderToYaml(entryFile: string): Promise<string> {
+export interface RenderOptions {
+  includeOperators?: boolean;
+  operatorsOnly?: boolean;
+}
+
+async function bundleAndRender(entryFile: string) {
   const absolutePath = resolve(entryFile);
 
   let result;
   try {
-    // Bundle everything with esbuild to resolve all imports
     const { build } = await import('esbuild');
 
     result = await build({
@@ -36,11 +40,8 @@ export async function renderToYaml(entryFile: string): Promise<string> {
   }
 
   const bundledCode = result.outputFiles[0].text;
-
-  // Create a data URL from the bundled code
   const dataUrl = 'data:text/javascript;base64,' + Buffer.from(bundledCode).toString('base64');
 
-  // Import the bundled module
   let module: EntryModule;
   try {
     module = (await import(dataUrl)) as EntryModule;
@@ -63,28 +64,46 @@ export async function renderToYaml(entryFile: string): Promise<string> {
     element = Component;
   }
 
-  const renderResult = render(element);
+  return render(element);
+}
 
-  if (renderResult.resources.length === 0) {
+export async function renderToYaml(entryFile: string, options: RenderOptions = {}): Promise<string> {
+  const renderResult = await bundleAndRender(entryFile);
+
+  if (renderResult.resources.length === 0 && !options.operatorsOnly) {
     throw new Error(
       `No Kubernetes resources rendered from ${entryFile}. ` +
         `Ensure your component returns resources with 'apiVersion' and 'kind'.`
     );
   }
 
-  // Fetch operator manifests if any
-  const operatorManifests = renderResult.operators.length > 0
-    ? await fetchOperatorManifests(renderResult.operators)
-    : [];
+  const yamlDocs: string[] = [];
 
-  const yamlDocs = renderResult.resources.map((resource) =>
-    yaml.dump(resource, {
-      sortKeys: false,
-      noRefs: true,
-      lineWidth: -1,
-    })
-  );
+  // Include operators if requested
+  if ((options.includeOperators || options.operatorsOnly) && renderResult.operators.length > 0) {
+    const operatorManifests = await fetchOperatorManifests(renderResult.operators);
+    yamlDocs.push(...operatorManifests);
+  }
 
-  // Combine: operators first, then resources
-  return [...operatorManifests, ...yamlDocs].join('---\n');
+  // Include resources unless operators-only
+  if (!options.operatorsOnly) {
+    const resourceDocs = renderResult.resources.map((resource) =>
+      yaml.dump(resource, {
+        sortKeys: false,
+        noRefs: true,
+        lineWidth: -1,
+      })
+    );
+    yamlDocs.push(...resourceDocs);
+  }
+
+  if (yamlDocs.length === 0) {
+    throw new Error(`No output generated from ${entryFile}.`);
+  }
+
+  return yamlDocs.join('---\n');
+}
+
+export async function renderToOperatorsYaml(entryFile: string): Promise<string> {
+  return renderToYaml(entryFile, { operatorsOnly: true });
 }
