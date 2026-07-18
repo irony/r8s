@@ -1,7 +1,7 @@
 {
-  "name": "@r8s/vault",
+  "name": "@r8s/openbao",
   "version": "0.1.0",
-  "description": "r8s recipes for HashiCorp Vault / OpenBao operator",
+  "description": "r8s recipes for OpenBao secret management (via Vault Secrets Operator)",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
