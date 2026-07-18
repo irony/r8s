@@ -1,0 +1,107 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: r8ssources.r8s.berget.ai
+spec:
+  group: r8s.berget.ai
+  names:
+    kind: R8sSource
+    listKind: R8sSourceList
+    plural: r8ssources
+    singular: r8ssource
+    shortNames:
+      - r8s
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - git
+                - entry
+              properties:
+                git:
+                  type: object
+                  required:
+                    - url
+                  properties:
+                    url:
+                      type: string
+                      description: Git repository URL
+                    ref:
+                      type: string
+                      default: main
+                      description: Git branch, tag, or commit SHA
+                    secretRef:
+                      type: string
+                      description: Name of Secret containing git credentials
+                entry:
+                  type: string
+                  default: k8s/r8s.tsx
+                  description: Path to TSX entry file within the repo
+                output:
+                  type: string
+                  default: rendered/
+                  description: Directory for rendered YAML output
+                includeOperators:
+                  type: boolean
+                  default: false
+                  description: Include operator manifests in rendered output
+                interval:
+                  type: string
+                  default: 1m
+                  description: Reconciliation interval
+                suspend:
+                  type: boolean
+                  default: false
+                  description: Suspend reconciliation
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum: ["True", "False", "Unknown"]
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                lastAttemptedRevision:
+                  type: string
+                lastAppliedRevision:
+                  type: string
+                resources:
+                  type: integer
+                  description: Number of rendered resources
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: Revision
+          type: string
+          jsonPath: .status.lastAppliedRevision
+        - name: Resources
+          type: integer
+          jsonPath: .status.resources
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
