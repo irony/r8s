@@ -1,0 +1,8 @@
+{
+  "name": "r8s-infrastructure",
+  "private": true,
+  "dependencies": {
+    "@r8s/core": "file:../packages/core",
+    "@r8s/recipes": "file:../packages/recipes"
+  }
+}
