@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/* Import Berget AI fonts */
+@import "@fontsource/ovo/index.css";
+@import "@fontsource-variable/dm-sans/wght.css";
+@import "@fontsource/dm-mono/400.css";
+
+@theme {
+  /* Berget AI Brand Colors */
+  --color-moss: #52B788;
+  --color-lichen: #74C69D;
+  --color-spruce: #2D6A4F;
+  --color-fjord: #0F405A;
+  --color-peak: #FFFFFF;
+  --color-cloud: #E5DDD5;
+  --color-slate: #1A1A1A;
+  --color-night: #0A0A0A;
+  
+  /* Status Colors */
+  --color-info: #3975D6;
+  --color-success: #52B788;
+  --color-warning: #CFFF8B;
+  --color-error: #D1392E;
+  
+  /* Typography */
+  --font-serif: "Ovo", serif;
+  --font-sans: "DM Sans Variable", sans-serif;
+  --font-mono: "DM Mono", monospace;
+}
+
+/* Base styles */
+body {
+  background-color: var(--color-night);
+  color: var(--color-peak);
+  font-family: var(--font-sans);
+}
+
+/* Headings use serif (Ovo) */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+/* Links use Moss green */
+a {
+  color: var(--color-moss);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-lichen);
+}
+
+/* Code blocks */
+pre {
+  background-color: var(--color-slate);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+/* Navigation active state */
+a.is-active {
+  color: var(--color-moss);
+  font-weight: 500;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-night);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-spruce);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-moss);
+}
