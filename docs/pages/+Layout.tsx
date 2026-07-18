@@ -11,6 +11,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <a href="/" className="text-peak/70 hover:text-peak transition-colors">Overview</a>
           <a href="/core" className="text-peak/70 hover:text-peak transition-colors">Core</a>
           <a href="/recipes" className="text-peak/70 hover:text-peak transition-colors">Recipes</a>
+          <a href="/operators" className="text-peak/70 hover:text-peak transition-colors">Operators</a>
           <a href="/deployment" className="text-peak/70 hover:text-peak transition-colors">Deployment</a>
           <a href="/testing" className="text-peak/70 hover:text-peak transition-colors">Testing</a>
         </div>
