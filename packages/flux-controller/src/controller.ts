@@ -14,6 +14,7 @@ export interface ControllerOptions {
   output: string;
   entry?: string;
   verbose?: boolean;
+  includeOperators?: boolean;
 }
 
 export interface RenderResult {
@@ -83,7 +84,7 @@ export function findEntryFiles(sourcePath: string, entryPattern = 'r8s.tsx'): st
 }
 
 /** Render a TSX file to YAML */
-export async function renderFile(filePath: string, outputDir: string, verbose?: boolean): Promise<RenderResult> {
+export async function renderFile(filePath: string, outputDir: string, verbose?: boolean, includeOperators?: boolean): Promise<RenderResult> {
   const startTime = Date.now();
   const relativePath = relative(process.cwd(), filePath);
 
@@ -134,8 +135,8 @@ export async function renderFile(filePath: string, outputDir: string, verbose?: 
       throw new Error(parsed.error);
     }
 
-    // Fetch operator manifests and combine with resources
-    const operatorManifests = parsed.operatorList?.length > 0
+    // Fetch operator manifests only if requested
+    const operatorManifests = (includeOperators && parsed.operatorList?.length > 0)
       ? await fetchOperatorManifests(parsed.operatorList)
       : [];
 
@@ -233,12 +234,15 @@ export function resourcesToYAML(resources: any[]): string {
 
 /** Main controller function */
 export async function runController(options: ControllerOptions): Promise<RenderResult[]> {
-  const { source, output, entry = 'r8s.tsx', verbose } = options;
+  const { source, output, entry = 'r8s.tsx', verbose, includeOperators } = options;
 
   log.info('Starting r8s-controller');
   log.info('Source: ' + source);
   log.info('Output: ' + output);
   log.info('Entry pattern: ' + entry);
+  if (includeOperators) {
+    log.info('Including operator manifests');
+  }
 
   if (!existsSync(source)) {
     log.error('Source directory does not exist: ' + source);
@@ -260,7 +264,7 @@ export async function runController(options: ControllerOptions): Promise<RenderR
 
   const results: RenderResult[] = [];
   for (const file of entryFiles) {
-    const result = await renderFile(file, output, verbose);
+    const result = await renderFile(file, output, verbose, includeOperators);
     results.push(result);
 
     if (result.success) {
@@ -300,6 +304,8 @@ if (require.main === module) {
       options.output = arg.split('=')[1];
     } else if (arg.startsWith('--entry=')) {
       options.entry = arg.split('=')[1];
+    } else if (arg === '--include-operators') {
+      options.includeOperators = true;
     } else if (arg === '--verbose' || arg === '-v') {
       options.verbose = true;
     }
@@ -313,13 +319,14 @@ Usage:
   r8s-controller --source=<path> --output=<path> [options]
 
 Options:
-  --source=<path>     Source directory with .tsx files
-  --output=<path>     Output directory for rendered YAML
-  --entry=<pattern>   Entry file pattern (default: r8s.tsx)
-  --verbose, -v       Enable verbose logging
+  --source=<path>        Source directory with .tsx files
+  --output=<path>        Output directory for rendered YAML
+  --entry=<pattern>      Entry file pattern (default: r8s.tsx)
+  --include-operators    Include operator manifests in output
+  --verbose, -v          Enable verbose logging
 
 Example:
-  r8s-controller --source=./k8s --output=./rendered --verbose
+  r8s-controller --source=./k8s --output=./rendered --include-operators --verbose
 `);
     process.exit(1);
   }
