@@ -45,7 +45,7 @@ metadata:
 | `@r8s/core` | JSX factory + all Kubernetes API components (`<deployment>`, `<service>`, `<ingress>`, etc.) | — |
 | `@r8s/recipes` | Pre-built components (`<App>`, `<Database>`, `<Ingress>`) | cnpg, nginx-ingress |
 | `@r8s/cert-manager` | TLS certificates | cert-manager |
-| `@r8s/vault` | Secret management | vault-secrets-operator |
+| `@r8s/openbao` | Secret management | vault-secrets-operator |
 | `@r8s/keycloak` | Identity management | keycloak-operator |
 | `@r8s/external-dns` | DNS management | external-dns |
 | `@r8s/redis` | Redis clusters | redis-operator |
@@ -397,7 +397,7 @@ Each package exports its own operator factory:
 import { cnpgOperator, nginxIngressOperator } from '@r8s/recipes';
 import { certManagerOperator } from '@r8s/cert-manager';
 import { externalDNSOperator } from '@r8s/external-dns';
-import { vaultSecretsOperator } from '@r8s/vault';
+import { vaultSecretsOperator } from '@r8s/openbao';
 import { keycloakOperator } from '@r8s/keycloak';
 
 cnpgOperator('1.22.5');          // PostgreSQL operator

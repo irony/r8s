@@ -21,7 +21,7 @@
       "@r8s/k8s-types": ["./packages/k8s-types/src/index.ts"],
       "@r8s/recipes": ["./packages/recipes/src/index.ts"],
       "@r8s/cert-manager": ["./packages/cert-manager/src/index.ts"],
-      "@r8s/vault": ["./packages/vault/src/index.ts"],
+      "@r8s/openbao": ["./packages/openbao/src/index.ts"],
       "@r8s/keycloak": ["./packages/keycloak/src/index.ts"],
       "@r8s/external-dns": ["./packages/external-dns/src/index.ts"],
       "@r8s/redis": ["./packages/redis/src/index.ts"],

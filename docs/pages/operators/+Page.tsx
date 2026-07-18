@@ -393,7 +393,7 @@ export default function Page() {
               </tr>
               <tr className="border-b border-white/5">
                 <td className="py-3 px-4 font-medium">Vault Secrets</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">@r8s/vault</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">@r8s/openbao</td>
                 <td className="py-3 px-4">Secret management</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>
