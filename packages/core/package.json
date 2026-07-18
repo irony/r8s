@@ -24,6 +24,11 @@
       "types": "./dist/jsx-runtime.d.ts",
       "import": "./dist/jsx-runtime.js",
       "require": "./dist/jsx-runtime.js"
+    },
+    "./guardrails": {
+      "types": "./dist/guardrails.d.ts",
+      "import": "./dist/guardrails.js",
+      "require": "./dist/guardrails.js"
     }
   },
   "scripts": {
