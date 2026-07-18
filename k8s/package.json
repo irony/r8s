@@ -3,6 +3,7 @@
   "private": true,
   "dependencies": {
     "@r8s/core": "file:../packages/core",
-    "@r8s/recipes": "file:../packages/recipes"
+    "@r8s/recipes": "file:../packages/recipes",
+    "@r8s/cert-manager": "file:../packages/cert-manager"
   }
 }
