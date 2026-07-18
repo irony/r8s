@@ -3,13 +3,11 @@ import { CodeBlock } from "../../components/CodeBlock";
 
 const projectStructure = `my-project/
 ├── k8s/
-│   ├── r8s.tsx              # Your infrastructure
-│   └── package.json         # With @r8s/* dependencies
+│   └── r8s.tsx          # Your entire infrastructure
 ├── .github/
 │   └── workflows/
-│       └── deploy.yaml      # GitHub Actions (optional)
-├── package.json
-└── tsconfig.json`;
+│       └── deploy.yaml  # Optional: GitHub Actions
+└── package.json`;
 
 const r8sTsx = `// k8s/r8s.tsx
 import { App } from '@r8s/recipes';
@@ -22,10 +20,6 @@ export default (
     replicas={3}
     database={{ name: "app-db", storage: "10Gi" }}
     tls={{ issuer: "letsencrypt" }}
-    resources={{
-      requests: { cpu: "100m", memory: "128Mi" },
-      limits: { cpu: "500m", memory: "512Mi" },
-    }}
   />
 );`;
 
@@ -61,19 +55,6 @@ jobs:
           git diff --quiet && git diff --staged --quiet || \\
             (git commit -m "chore: render manifests [skip ci]" && git push)`;
 
-const fluxBootstrap = `# If you haven't bootstrapped Flux yet:
-# https://fluxcd.io/flux/installation/bootstrap/github/
-
-flux bootstrap github \\
-  --owner=your-org \\
-  --repository=my-project \\
-  --branch=main \\
-  --path=./clusters/production \\
-  --personal`;
-
-const installController = `# Install r8s-controller as init container in Flux
-kubectl apply -f https://raw.githubusercontent.com/irony/r8s/main/packages/flux-controller/deploy.yaml`;
-
 const fluxGitRepo = `apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
@@ -99,52 +80,24 @@ spec:
   prune: true
   wait: true`;
 
-const operatorYaml = `# Operators are just YAML too
-# Include them in your rendered output or apply separately
-
-# CloudNativePG operator
-apiVersion: apps/v1
-kind: Deployment
+const renderedOutput = `# Operator: cnpg v1.22.5
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: cnpg-controller-manager
-  namespace: cnpg-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: cnpg-controller-manager
-  template:
-    metadata:
-      labels:
-        app: cnpg-controller-manager
-    spec:
-      containers:
-        - name: manager
-          image: ghcr.io/cloudnative-pg/cloudnative-pg:1.22.5
-          args:
-            - controller
-            - --leader-elect
-            - --leader-election-id=cnpg-controller-manager
+  name: cnpg-system
 ---
-# cert-manager operator
-apiVersion: apps/v1
-kind: Deployment
+# Operator: cert-manager v1.14.0
+apiVersion: v1
+kind: Namespace
 metadata:
   name: cert-manager
-  namespace: cert-manager
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: cert-manager
-  template:
-    metadata:
-      labels:
-        app: cert-manager
-    spec:
-      containers:
-        - name: cert-manager
-          image: quay.io/jetstack/cert-manager-controller:v1.14.0`;
+---
+# Your resources
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+# ...`;
 
 const multiEnv = `// k8s/overlays/staging/r8s.tsx
 import { App } from '@r8s/recipes';
@@ -156,10 +109,6 @@ export default (
     host="staging.example.com"
     replicas={1}
     database={{ name: "staging-db", storage: "5Gi" }}
-    env={{
-      NODE_ENV: "staging",
-      DEBUG: "true",
-    }}
   />
 );
 
@@ -174,10 +123,6 @@ export default (
     replicas={3}
     database={{ name: "app-db", storage: "20Gi" }}
     tls={{ issuer: "letsencrypt" }}
-    resources={{
-      requests: { cpu: "100m", memory: "128Mi" },
-      limits: { cpu: "500m", memory: "512Mi" },
-    }}
   />
 );`;
 
@@ -189,7 +134,7 @@ export default function Page() {
       <div className="space-y-4">
         <h1 className="text-4xl tracking-tight">Deployment</h1>
         <p className="text-xl text-cloud/80">
-          Choose your deployment strategy. Render in CI or in-cluster.
+          One file. Everything included. Operators are fetched automatically.
         </p>
       </div>
 
@@ -225,8 +170,8 @@ export default function Page() {
           <div className="p-6 rounded-lg border border-white/10 bg-spruce/20">
             <h3 className="font-serif text-xl mb-3">GitHub Actions</h3>
             <p className="text-cloud/70 text-sm">
-              Render TSX to YAML in CI, then commit the output. Works with any GitOps tool 
-              (ArgoCD, FluxCD, etc.) that reads YAML from Git.
+              Render TSX to YAML in CI. Operators are fetched and included automatically.
+              Commit the output — your GitOps tool applies everything.
             </p>
           </div>
 
@@ -241,26 +186,23 @@ export default function Page() {
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">2. Render</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">GitHub Actions renders TSX → YAML</span>
+                <span className="text-cloud/70">CI renders TSX → YAML, fetches operators</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">3. Commit</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">Rendered YAML committed back to repo</span>
+                <span className="text-cloud/70">Rendered YAML (with operators) committed back</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">4. Apply</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">GitOps tool applies YAML to cluster</span>
+                <span className="text-cloud/70">GitOps tool applies everything to cluster</span>
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
             <h2 className="text-2xl tracking-tight">GitHub Actions Workflow</h2>
-            <p className="text-cloud/70">
-              Add this to <code>.github/workflows/deploy.yaml</code>:
-            </p>
             <CodeBlock code={githubActions} language="yaml" />
           </div>
         </div>
@@ -272,8 +214,8 @@ export default function Page() {
           <div className="p-6 rounded-lg border border-moss/30 bg-moss/5">
             <h3 className="font-serif text-xl mb-3 text-moss">FluxCD + r8s-controller (Recommended)</h3>
             <p className="text-cloud/70 text-sm">
-              Render TSX directly in the cluster. No CI build step needed. Your repository 
-              stays clean — only TypeScript source code.
+              Render TSX directly in the cluster. No CI build step. Your repo stays clean 
+              — just TypeScript source code. Operators are fetched and included automatically.
             </p>
           </div>
 
@@ -293,12 +235,12 @@ export default function Page() {
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">3. Render</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">r8s-controller renders TSX → YAML</span>
+                <span className="text-cloud/70">r8s-controller renders TSX → YAML, fetches operators</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-moss font-mono">4. Apply</span>
                 <span className="text-cloud/40">→</span>
-                <span className="text-cloud/70">Flux applies rendered YAML</span>
+                <span className="text-cloud/70">Flux applies everything — resources + operators</span>
               </div>
             </div>
           </div>
@@ -312,7 +254,6 @@ export default function Page() {
                 If you haven't already, bootstrap FluxCD. See{" "}
                 <a href="https://fluxcd.io/flux/installation/bootstrap/github/" className="text-moss hover:text-lichen">Flux Bootstrap Docs</a>.
               </p>
-              <CodeBlock code={fluxBootstrap} language="bash" />
             </div>
 
             <div className="space-y-4">
@@ -320,16 +261,18 @@ export default function Page() {
               <p className="text-cloud/70">
                 Add r8s-controller as init container to Flux's source-controller:
               </p>
-              <CodeBlock code={installController} language="bash" />
+              <CodeBlock code={`kubectl apply -f https://raw.githubusercontent.com/irony/r8s/main/packages/flux-controller/deploy.yaml`} language="bash" />
             </div>
 
             <div className="space-y-4">
               <h3 className="text-xl">3. Create GitRepository</h3>
+              <p className="text-cloud/70">Point Flux at your repo:</p>
               <CodeBlock code={fluxGitRepo} language="yaml" />
             </div>
 
             <div className="space-y-4">
               <h3 className="text-xl">4. Create Kustomization</h3>
+              <p className="text-cloud/70">Tell Flux to apply the rendered output:</p>
               <CodeBlock code={fluxKustomization} language="yaml" />
             </div>
           </div>
@@ -339,20 +282,12 @@ export default function Page() {
       {/* Common Sections */}
       <div className="space-y-12">
         <div className="space-y-6">
-          <h2 className="text-2xl tracking-tight">Operators</h2>
+          <h2 className="text-2xl tracking-tight">Operators Included Automatically</h2>
           <p className="text-cloud/70">
-            r8s components declare their operator dependencies. Operators are just YAML too — 
-            include them in your rendered output or apply them separately. No Helm needed.
+            When you use components that need operators (like <code>database</code> for CloudNativePG), 
+            r8s fetches the operator manifests and includes them in the output. No separate installation needed.
           </p>
-          <CodeBlock code={operatorYaml} language="yaml" />
-          
-          <div className="p-6 rounded-lg border border-moss/30 bg-moss/5">
-            <p className="text-cloud/80">
-              <strong className="text-moss">Coming soon:</strong>{" "}
-              r8s will automatically include operator YAML in the rendered output. 
-              For now, include operator manifests alongside your application YAML.
-            </p>
-          </div>
+          <CodeBlock code={renderedOutput} language="yaml" />
         </div>
 
         <div className="space-y-6">
@@ -366,7 +301,7 @@ export default function Page() {
         <div className="space-y-6">
           <h2 className="text-2xl tracking-tight">Your Infrastructure</h2>
           <p className="text-cloud/70">
-            Define your infrastructure in <code>k8s/r8s.tsx</code>:
+            Define everything in <code>k8s/r8s.tsx</code>:
           </p>
           <CodeBlock code={r8sTsx} language="tsx" />
         </div>
@@ -386,7 +321,7 @@ export default function Page() {
         <p className="text-cloud/70 text-sm leading-relaxed">
           Check out the <a href="/recipes" className="text-moss hover:text-lichen">recipes</a> to find 
           components to deploy, or read about <a href="/operators" className="text-moss hover:text-lichen">operators</a> 
-          to understand what dependencies to include.
+          to understand how dependencies are tracked.
         </p>
       </div>
     </div>
