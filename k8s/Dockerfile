@@ -5,6 +5,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Copy workspace packages first (needed for npm ci)
+COPY packages/ ./packages/
+
 # Copy root package files
 COPY package.json package-lock.json ./
 
@@ -15,9 +18,8 @@ RUN npm ci
 COPY docs/package.json docs/package-lock.json ./docs/
 RUN cd docs && npm ci
 
-# Copy source
+# Copy remaining source
 COPY docs/ ./docs/
-COPY packages/ ./packages/
 COPY tsconfig.json ./
 
 # Build the docs site
