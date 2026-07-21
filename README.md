@@ -49,18 +49,11 @@ metadata:
 | `@r8s/keycloak` | Identity management | keycloak-operator |
 | `@r8s/external-dns` | DNS management | external-dns |
 | `@r8s/redis` | Redis clusters | redis-operator |
-| `@r8s/envoy` | Envoy Gateway (Gateway API) | envoy-gateway |
+| `@r8s/gateway` | Envoy Gateway (Gateway API) | envoy-gateway |
 | `@r8s/monitoring` | Prometheus stack | kube-prometheus-stack |
 | `@r8s/clickhouse` | ClickHouse database | clickhouse-operator |
 | `@r8s/logging` | Log aggregation (Banzai Cloud) | logging-operator |
 | `@r8s/loki` | Grafana Loki | loki |
-| `@r8s/cnpg` | CloudNativePG PostgreSQL | cnpg |
-| `@r8s/velero` | Velero backups | velero |
-| `@r8s/grafana` | Grafana dashboards | grafana |
-| `@r8s/rustfs` | RustFS S3-compatible object storage | — |
-| `@r8s/superset` | Apache Superset analytics | — |
-| `@r8s/element` | Element Matrix chat client | — |
-| `@r8s/wireguard` | WireGuard VPN (wg-easy) | — |
 | `@r8s/r8s-controller` | In-cluster TSX rendering controller | — |
 | `@r8s/flux-controller` | FluxCD source controller | — |
 
@@ -389,7 +382,7 @@ export default function Platform() {
       nginxIngressOperator('1.15.1'),
     ]}>
       <Database name="app-db" storage="10Gi" />
-      <App name="api" host="api.example.com" image="myapp/api:v1" tls />
+      <App name="api" host="api.example.com" image="myapp/api:v1" tls={{ secretName: "api-tls", clusterIssuer: "letsencrypt" }} />
     </OperatorContext.Provider>
   );
 }
@@ -407,14 +400,12 @@ import { certManagerOperator } from '@r8s/cert-manager';
 import { externalDNSOperator } from '@r8s/external-dns';
 import { vaultSecretsOperator } from '@r8s/openbao';
 import { keycloakOperator } from '@r8s/keycloak';
-import { envoyGatewayOperator } from '@r8s/envoy';
+import { envoyGatewayOperator } from '@r8s/gateway';
 import { redisOperator } from '@r8s/redis';
 import { prometheusOperator } from '@r8s/monitoring';
 import { clickhouseOperator } from '@r8s/clickhouse';
 import { loggingOperator } from '@r8s/logging';
 import { lokiOperator } from '@r8s/loki';
-import { veleroOperator } from '@r8s/velero';
-import { grafanaOperator } from '@r8s/grafana';
 
 cnpgOperator('1.22.5');          // PostgreSQL operator
 nginxIngressOperator('1.15.1');  // Ingress controller
@@ -423,13 +414,11 @@ externalDNSOperator('0.14.0');   // DNS management
 vaultSecretsOperator('0.5.0');   // Secret management
 keycloakOperator('24.0.0');      // Identity management
 envoyGatewayOperator('1.7.0');   // Gateway API
-redisOperator('0.22.0');          // Redis clusters
-prometheusOperator('0.72.0');     // Prometheus stack
-clickhouseOperator('0.23.0');     // ClickHouse database
-loggingOperator('4.2.3');         // Log aggregation
-lokiOperator('5.47.0');           // Grafana Loki
-veleroOperator('1.13.0');         // Backups
-grafanaOperator('10.3.0');        // Dashboards
+redisOperator('0.22.0');         // Redis clusters
+prometheusOperator('0.72.0');    // Prometheus stack
+clickhouseOperator('0.23.0');    // ClickHouse database
+loggingOperator('4.2.3');        // Log aggregation
+lokiOperator('5.47.0');          // Grafana Loki
 ```
 
 ## Recipes
@@ -504,6 +493,7 @@ import { App, Database } from '@r8s/recipes';
     tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
   />
 </>
+```
 
 **Automatically declares:** `nginx-ingress`, `cert-manager` operators (the latter only when TLS is enabled).
 
@@ -573,7 +563,7 @@ export default function Platform() {
           certManagerOperator('1.14.0'),
         ]}>
           <Database name="app-db" storage="10Gi" />
-          <App name="api" host="api.example.com" image="myapp/api:v1" tls />
+          <App name="api" host="api.example.com" image="myapp/api:v1" tls={{ secretName: "api-tls", clusterIssuer: "letsencrypt" }} />
         </OperatorContext.Provider>
       </Labels.Provider>
     </Namespace.Provider>
@@ -869,13 +859,10 @@ r8s/
 │   ├── cert-manager/       # TLS certificate components
 │   ├── clickhouse/         # ClickHouse Operator components
 │   ├── cli/                # Command-line tool
-│   ├── cnpg/               # CloudNativePG PostgreSQL components
 │   ├── core/               # JSX factory, renderer, context, validation
-│   ├── element/            # Element Matrix chat client components
-│   ├── envoy/             # Envoy Gateway (Gateway API) components
 │   ├── external-dns/       # DNS management components
 │   ├── flux-controller/    # FluxCD source controller for in-cluster rendering
-│   ├── grafana/            # Grafana dashboard components
+│   ├── gateway/            # Envoy Gateway (Gateway API) components
 │   ├── k8s-types/          # TypeScript interfaces + shared routing abstractions
 │   ├── keycloak/           # Identity management components
 │   ├── logging/            # Logging Operator components
@@ -884,11 +871,7 @@ r8s/
 │   ├── openbao/            # Secret management components
 │   ├── r8s-controller/     # In-cluster TSX rendering controller
 │   ├── recipes/            # Pre-built components (Database, Ingress, App)
-│   ├── redis/              # Redis Operator components
-│   ├── rustfs/             # RustFS S3-compatible object storage components
-│   ├── superset/           # Apache Superset analytics components
-│   ├── velero/             # Velero backup components
-│   └── wireguard/          # WireGuard VPN components
+│   └── redis/              # Redis Operator components
 ├── examples/
 │   ├── basic-app/          # Simple app + database
 │   ├── simple-app/         # One-liner App component

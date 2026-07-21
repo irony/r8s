@@ -32,11 +32,12 @@ export const nginxIngressOperator = (version = '1.15.1') =>
 /**
  * Vault Secrets Operator declaration.
  *
- * This is intentionally a local copy of the operator defined in
- * @r8s/openbao. Re-exporting from '@r8s/openbao' would require adding it
- * as a project reference in recipes/tsconfig.json and a dependency in
- * recipes/package.json, which is outside this agent's scope. The duplicate
- * should be removed once that wiring is in place.
+ * Duplicated from @r8s/openbao to avoid a circular project reference
+ * (recipes → openbao → core → recipes). The canonical definition lives in
+ * packages/openbao/src/index.ts; keep these in sync when updating versions.
+ * Once @r8s/openbao is wired as a proper dependency of @r8s/recipes
+ * (package.json + tsconfig.json reference), this duplicate should be
+ * replaced with a re-export.
  */
 export const vaultSecretsOperator = (version = '0.5.0') =>
   manifestOperator(
