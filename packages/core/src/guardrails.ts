@@ -98,7 +98,7 @@ export const requireLabels = (requiredLabels: string[]): GuardrailRule => ({
   test: (resources) => {
     const errors: ValidationError[] = [];
 
-    for (const resource of resources) {
+    for (const resource of resources as any[]) {
       const labels = resource.metadata?.labels || {};
       for (const label of requiredLabels) {
         if (!labels[label]) {

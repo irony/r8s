@@ -14,7 +14,7 @@ export default defineConfig({
       { find: /^@r8s\/k8s-types$/, replacement: resolve(__dirname, 'packages/k8s-types/src/index.ts') },
       { find: /^@r8s\/recipes$/, replacement: resolve(__dirname, 'packages/recipes/src/index.ts') },
       { find: /^@r8s\/cert-manager$/, replacement: resolve(__dirname, 'packages/cert-manager/src/index.ts') },
-      { find: /^@r8s\/vault$/, replacement: resolve(__dirname, 'packages/vault/src/index.ts') },
+      { find: /^@r8s\/openbao$/, replacement: resolve(__dirname, 'packages/openbao/src/index.ts') },
       { find: /^@r8s\/keycloak$/, replacement: resolve(__dirname, 'packages/keycloak/src/index.ts') },
       { find: /^@r8s\/external-dns$/, replacement: resolve(__dirname, 'packages/external-dns/src/index.ts') },
       { find: /^@r8s\/redis$/, replacement: resolve(__dirname, 'packages/redis/src/index.ts') },
