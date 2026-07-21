@@ -102,6 +102,14 @@ export interface ClusterConfig {
   storage: string;
   host: string;
   secretName: string;
+  /**
+   * Reference to the Kubernetes Secret holding the shared cluster's password.
+   * Optional because the `Cluster` component itself does not create a Secret —
+   * CNPG provisions secrets automatically with its own naming. Consumers that
+   * need an explicit reference should set this when they know the secret name
+   * (e.g. when a `<Database />` child creates its own credentials secret).
+   */
+  passwordSecret?: { name: string; key: string };
 }
 
 export const ClusterContext = createContext<ClusterConfig | null>(null);

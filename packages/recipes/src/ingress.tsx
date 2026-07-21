@@ -1,4 +1,4 @@
-import { jsx, useContext, declareOperator } from '@r8s/core';
+import { jsx, Fragment, useContext, declareOperator } from '@r8s/core';
 import { Ingress } from '@r8s/k8s-types';
 import type { BaseRouteProps, RouteTarget, TLSConfig } from '@r8s/k8s-types';
 import { OperatorContext } from '@r8s/core/defaults';
@@ -119,5 +119,5 @@ export function Ingress(props: IngressProps) {
 
   resources.push(jsx('Ingress', ingress));
 
-  return resources;
+  return jsx(Fragment, { children: resources });
 }

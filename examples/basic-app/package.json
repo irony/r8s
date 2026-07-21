@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "render-k8s": "r8s render",
+    "build": "echo 'No build for example app'",
     "test": "echo 'No tests for example app'"
   },
   "dependencies": {

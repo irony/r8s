@@ -54,6 +54,7 @@ metadata:
 | `@r8s/clickhouse` | ClickHouse database | clickhouse-operator |
 | `@r8s/logging` | Log aggregation (Banzai Cloud) | logging-operator |
 | `@r8s/loki` | Grafana Loki | loki |
+| `@r8s/r8s-controller` | In-cluster TSX rendering controller | — |
 | `@r8s/flux-controller` | FluxCD source controller | — |
 
 ## The Problem
@@ -381,7 +382,7 @@ export default function Platform() {
       nginxIngressOperator('1.15.1'),
     ]}>
       <Database name="app-db" storage="10Gi" />
-      <App name="api" domain="api.example.com" image="myapp/api:v1" database tls />
+      <App name="api" host="api.example.com" image="myapp/api:v1" tls={{ secretName: "api-tls", clusterIssuer: "letsencrypt" }} />
     </OperatorContext.Provider>
   );
 }
@@ -399,13 +400,25 @@ import { certManagerOperator } from '@r8s/cert-manager';
 import { externalDNSOperator } from '@r8s/external-dns';
 import { vaultSecretsOperator } from '@r8s/openbao';
 import { keycloakOperator } from '@r8s/keycloak';
+import { envoyGatewayOperator } from '@r8s/gateway';
+import { redisOperator } from '@r8s/redis';
+import { prometheusOperator } from '@r8s/monitoring';
+import { clickhouseOperator } from '@r8s/clickhouse';
+import { loggingOperator } from '@r8s/logging';
+import { lokiOperator } from '@r8s/loki';
 
 cnpgOperator('1.22.5');          // PostgreSQL operator
 nginxIngressOperator('1.15.1');  // Ingress controller
-certManagerOperator('1.14.0');    // TLS certificates
-externalDNSOperator('6.28.0');    // DNS management
+certManagerOperator('1.14.0');   // TLS certificates
+externalDNSOperator('0.14.0');   // DNS management
 vaultSecretsOperator('0.5.0');   // Secret management
-keycloakOperator('24.0.0');       // Identity management
+keycloakOperator('24.0.0');      // Identity management
+envoyGatewayOperator('1.7.0');   // Gateway API
+redisOperator('0.22.0');         // Redis clusters
+prometheusOperator('0.72.0');    // Prometheus stack
+clickhouseOperator('0.23.0');    // ClickHouse database
+loggingOperator('4.2.3');        // Log aggregation
+lokiOperator('5.47.0');          // Grafana Loki
 ```
 
 ## Recipes
@@ -451,23 +464,40 @@ import { Ingress } from '@r8s/recipes';
 
 ### `<App />`
 
-Creates: Complete application stack (Database + WebService + Ingress)
+Creates: WebService (Deployment + Service) + Ingress. Compose with `<Database />` for a full stack.
 
 ```tsx
 import { App } from '@r8s/recipes';
 
 <App
   name="myapp"
-  domain="myapp.example.com"
+  host="myapp.example.com"
   image="mycompany/myapp:v1.2.3"
   port={3000}
   replicas={3}
-  database={true}
-  tls={true}
+  tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
 />
 ```
 
-**Automatically declares:** `cnpg`, `nginx-ingress`, `cert-manager` operators
+To add a database, compose `<App />` with `<Database />`:
+
+```tsx
+import { App, Database } from '@r8s/recipes';
+
+<>
+  <Database name="myapp-db" storage="20Gi" />
+  <App
+    name="myapp"
+    host="myapp.example.com"
+    image="mycompany/myapp:v1.2.3"
+    tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }}
+  />
+</>
+```
+
+**Automatically declares:** `nginx-ingress`, `cert-manager` operators (the latter only when TLS is enabled).
+
+> **Note:** `cnpg` is declared automatically when a `<Database />` component is composed inside or alongside `<App />`, not by `<App />` itself.
 
 ## How It Works
 
@@ -533,7 +563,7 @@ export default function Platform() {
           certManagerOperator('1.14.0'),
         ]}>
           <Database name="app-db" storage="10Gi" />
-          <App name="api" domain="api.example.com" image="myapp/api:v1" database tls />
+          <App name="api" host="api.example.com" image="myapp/api:v1" tls={{ secretName: "api-tls", clusterIssuer: "letsencrypt" }} />
         </OperatorContext.Provider>
       </Labels.Provider>
     </Namespace.Provider>
@@ -826,21 +856,22 @@ npx r8s render
 ```
 r8s/
 ├── packages/
-│   ├── k8s-types/          # TypeScript interfaces + shared routing abstractions
-│   ├── core/               # JSX factory, renderer, context, validation
-│   ├── cli/                # Command-line tool
-│   ├── recipes/            # Pre-built components (Database, Ingress, App)
 │   ├── cert-manager/       # TLS certificate components
-│   ├── vault/              # Secret management components
-│   ├── keycloak/           # Identity management components
-│   ├── external-dns/       # DNS management components
-│   ├── redis/              # Redis Operator components
-│   ├── gateway/            # Envoy Gateway (Gateway API) components
-│   ├── monitoring/         # Prometheus stack components
 │   ├── clickhouse/         # ClickHouse Operator components
+│   ├── cli/                # Command-line tool
+│   ├── core/               # JSX factory, renderer, context, validation
+│   ├── external-dns/       # DNS management components
+│   ├── flux-controller/    # FluxCD source controller for in-cluster rendering
+│   ├── gateway/            # Envoy Gateway (Gateway API) components
+│   ├── k8s-types/          # TypeScript interfaces + shared routing abstractions
+│   ├── keycloak/           # Identity management components
 │   ├── logging/            # Logging Operator components
 │   ├── loki/               # Grafana Loki components
-│   └── flux-controller/    # FluxCD source controller for in-cluster rendering
+│   ├── monitoring/         # Prometheus stack components
+│   ├── openbao/            # Secret management components
+│   ├── r8s-controller/     # In-cluster TSX rendering controller
+│   ├── recipes/            # Pre-built components (Database, Ingress, App)
+│   └── redis/              # Redis Operator components
 ├── examples/
 │   ├── basic-app/          # Simple app + database
 │   ├── simple-app/         # One-liner App component

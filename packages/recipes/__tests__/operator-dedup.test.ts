@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, jsx, Fragment, declareOperator } from '@r8s/core';
-import { cnpgOperator } from '@r8s/recipes';
+import { cnpgOperator } from '../src/operators';
 import { certManagerOperator } from '@r8s/cert-manager';
 
 describe('Operator deduplication', () => {

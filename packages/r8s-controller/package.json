@@ -2,17 +2,18 @@
   "name": "@r8s/r8s-controller",
   "version": "0.1.0",
   "description": "r8s Kubernetes controller - renders TSX to YAML in-cluster",
-  "main": "./dist/index.js",
+  "main": "./dist/controller.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "dev": "tsx src/controller.ts",
+    "start": "node dist/controller.js",
+    "test": "echo 'No tests for r8s-controller'"
   },
   "dependencies": {
     "@kubernetes/client-node": "^0.20.0",
-    "@r8s/core": "file:../core",
-    "@r8s/cli": "file:../cli"
+    "@r8s/core": "*",
+    "@r8s/cli": "*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

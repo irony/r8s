@@ -1,4 +1,4 @@
-import { jsx } from '@r8s/core';
+import { jsx, Fragment } from '@r8s/core';
 import { WebService, type SecretRef, type VaultSecretRef } from './web-service';
 import { Ingress } from './ingress';
 import type { TLSConfig } from '@r8s/k8s-types';
@@ -106,9 +106,12 @@ export function App(props: AppProps) {
     })
   );
 
+  // Children render as sibling resources (e.g. <BackgroundWorker />).
+  // WebService does not currently accept children as a prop, so we keep
+  // them as a Fragment sibling for the renderer to flatten.
   if (children) {
-    elements.push(jsx('Fragment', { children }));
+    elements.push(jsx(Fragment, { children }));
   }
 
-  return elements;
+  return jsx(Fragment, { children: elements });
 }
