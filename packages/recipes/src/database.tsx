@@ -116,6 +116,12 @@ export function Database(props: DatabaseProps) {
           break;
 
         case 'kubernetes':
+          // Shared cluster path: we cannot rely on CNPG's bootstrap secret
+          // handling because this Database does not own the CNPG Cluster object
+          // (the surrounding <Cluster> component does). We must materialize a
+          // Kubernetes Secret ourselves so consumers (e.g. WebService) can
+          // resolve passwordSecret via DatabaseContext. A password is therefore
+          // required here.
           if (!password) {
             throw new Error(
               `Database "${name}" requires a password prop when using Kubernetes secrets. ` +
@@ -275,7 +281,11 @@ export function Database(props: DatabaseProps) {
           break;
 
         case 'kubernetes':
-          // CNPG handles plain secrets automatically
+          // Dedicated cluster path: the CNPG Cluster resource created above
+          // references the secret via spec.bootstrap.initdb.secret.name, and
+          // CNPG will populate and rotate its contents automatically. No need
+          // to emit a Secret ourselves — bringing one would actually conflict
+          // with CNPG's ownership of that secret.
           break;
       }
     }

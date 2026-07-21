@@ -69,6 +69,7 @@ export function Cluster(props: ClusterProps) {
           storage,
           host: `${name}-rw`,
           secretName,
+          passwordSecret: { name: secretName, key: 'password' },
         },
         children,
       })

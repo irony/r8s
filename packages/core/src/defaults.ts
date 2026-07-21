@@ -102,6 +102,12 @@ export interface ClusterConfig {
   storage: string;
   host: string;
   secretName: string;
+  /**
+   * Reference to the Kubernetes Secret holding the shared cluster's password.
+   * Consumers (e.g. `<Database>`) can use this to wire `passwordSecret` on
+   * their DatabaseContext without requiring a separate secret.
+   */
+  passwordSecret: { name: string; key: string };
 }
 
 export const ClusterContext = createContext<ClusterConfig | null>(null);
