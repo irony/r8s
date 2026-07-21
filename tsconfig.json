@@ -39,7 +39,7 @@
     { "path": "./packages/core" },
     { "path": "./packages/recipes" },
     { "path": "./packages/cert-manager" },
-    { "path": "./packages/vault" },
+    { "path": "./packages/openbao" },
     { "path": "./packages/keycloak" },
     { "path": "./packages/external-dns" },
     { "path": "./packages/r8s-controller" },
