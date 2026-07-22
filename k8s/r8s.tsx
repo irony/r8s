@@ -2,33 +2,71 @@
 // One file. Everything included.
 //
 // This manifest deploys:
-// - cert-manager operator (for TLS)
-// - Let's Encrypt ClusterIssuer
 // - r8s documentation site (2 replicas, nginx)
+// - Envoy Gateway + HTTPRoute (Gateway API)
+// - cert-manager Certificate for TLS
 //
+// NOTE: Namespace is provisioned by Flux in the infra repo.
 // NOTE: Image tag :latest is replaced by CI with commit SHA.
 
-import { App } from '@r8s/recipes';
-import { LetsEncryptIssuer } from '@r8s/cert-manager';
+import { WebService } from '@r8s/recipes';
+import { Gateway, HTTPRoute } from '@r8s/envoy';
+import { ManagedCertificate } from '@r8s/cert-manager';
+
+const name = 'r8s-docs';
+const host = 'r8s.berget.ai';
+const namespace = 'r8s-docs';
 
 export default (
   <>
-    <LetsEncryptIssuer
-      name="letsencrypt"
-      email="admin@berget.ai"
-      server="production"
-    />
-    <App
-      name="r8s-docs"
+    <WebService
+      name={name}
+      namespace={namespace}
       image="ghcr.io/irony/r8s-docs:latest"
-      host="r8s.berget.ai"
-      replicas={2}
       port={3000}
-      tls={{ clusterIssuer: "letsencrypt" }}
+      replicas={2}
       resources={{
         requests: { cpu: "50m", memory: "64Mi" },
         limits: { cpu: "200m", memory: "256Mi" },
       }}
+    />
+
+    <ManagedCertificate
+      name={`${name}-tls`}
+      namespace={namespace}
+      secretName={`${name}-tls`}
+      dnsNames={[host]}
+      issuerName="letsencrypt-prod"
+    />
+
+    <Gateway
+      name={`${name}-gateway`}
+      namespace={namespace}
+      gatewayClassName="eg"
+      listeners={[
+        {
+          name: 'https',
+          protocol: 'HTTPS',
+          port: 443,
+          hostname: host,
+          tls: {
+            mode: 'Terminate',
+            certificateRefs: [{ name: `${name}-tls` }],
+          },
+        },
+      ]}
+    />
+
+    <HTTPRoute
+      name={`${name}-route`}
+      namespace={namespace}
+      parentRefs={[{ name: `${name}-gateway` }]}
+      hostnames={[host]}
+      rules={[
+        {
+          backendRefs: [{ name, port: 80 }],
+        },
+      ]}
     />
   </>
 );

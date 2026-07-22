@@ -156,18 +156,18 @@ export const searchEntries: SearchEntry[] = [
     keywords: ['redis', 'cache', 'redis-operator', 'package', 'components'],
   },
   {
-    title: '@r8s/gateway',
+    title: '@r8s/envoy',
     description: 'Envoy Gateway (Gateway API) components. Declares envoy-gateway.',
-    href: '/packages/gateway',
+    href: '/packages/envoy',
     category: 'Packages',
-    keywords: ['gateway', 'envoy', 'envoy-gateway', 'gateway api', 'ingress', 'package', 'components'],
+    keywords: ['envoy', 'envoy-gateway', 'gateway api', 'ingress', 'package', 'components'],
   },
   {
-    title: '@r8s/monitoring',
+    title: '@r8s/prometheus',
     description: 'Prometheus stack components. Declares kube-prometheus-stack.',
-    href: '/packages/monitoring',
+    href: '/packages/prometheus',
     category: 'Packages',
-    keywords: ['monitoring', 'prometheus', 'grafana', 'alertmanager', 'observability', 'package', 'components'],
+    keywords: ['prometheus', 'grafana', 'alertmanager', 'observability', 'package', 'components'],
   },
   {
     title: '@r8s/clickhouse',
@@ -177,9 +177,9 @@ export const searchEntries: SearchEntry[] = [
     keywords: ['clickhouse', 'olap', 'analytics database', 'clickhouse-operator', 'package', 'components'],
   },
   {
-    title: '@r8s/logging',
+    title: '@r8s/logging-operator',
     description: 'Log aggregation components (Banzai Cloud). Declares logging-operator.',
-    href: '/packages/logging',
+    href: '/packages/logging-operator',
     category: 'Packages',
     keywords: ['logging', 'logs', 'fluentd', 'fluentbit', 'banzai', 'logging-operator', 'package', 'components'],
   },
@@ -248,7 +248,7 @@ export const searchEntries: SearchEntry[] = [
   },
   {
     title: 'envoy-gateway',
-    description: 'Gateway API operator — declared by @r8s/gateway.',
+    description: 'Gateway API operator — declared by @r8s/envoy.',
     href: '/operators',
     category: 'Operators',
     keywords: ['envoy-gateway', 'envoy', 'gateway api', 'operator'],
@@ -262,7 +262,7 @@ export const searchEntries: SearchEntry[] = [
   },
   {
     title: 'kube-prometheus-stack',
-    description: 'Prometheus stack operator — declared by @r8s/monitoring.',
+    description: 'Prometheus stack operator — declared by @r8s/prometheus.',
     href: '/operators',
     category: 'Operators',
     keywords: ['kube-prometheus-stack', 'prometheus', 'grafana', 'monitoring', 'operator'],
@@ -276,7 +276,7 @@ export const searchEntries: SearchEntry[] = [
   },
   {
     title: 'logging-operator',
-    description: 'Banzai Cloud logging operator — declared by @r8s/logging.',
+    description: 'Banzai Cloud logging operator — declared by @r8s/logging-operator.',
     href: '/operators',
     category: 'Operators',
     keywords: ['logging-operator', 'banzai', 'fluentd', 'fluentbit', 'logging', 'operator'],

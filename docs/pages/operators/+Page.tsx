@@ -411,7 +411,7 @@ export default function Page() {
               </tr>
               <tr>
                 <td className="py-3 px-4 font-medium">Prometheus</td>
-                <td className="py-3 px-4 font-mono text-cloud/60">@r8s/monitoring</td>
+                <td className="py-3 px-4 font-mono text-cloud/60">@r8s/prometheus</td>
                 <td className="py-3 px-4">Monitoring stack</td>
                 <td className="py-3 px-4 font-mono text-cloud/60">manifest</td>
               </tr>

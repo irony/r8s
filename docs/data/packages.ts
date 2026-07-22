@@ -425,8 +425,8 @@ export default (
     ]
   },
   {
-    slug: "gateway",
-    name: "@r8s/gateway",
+    slug: "envoy",
+    name: "@r8s/envoy",
     title: "Gateway API",
     description: "Envoy Gateway components implementing the Kubernetes Gateway API. Declares envoy-gateway and provisions Gateways, HTTPRoutes, and EnvoyProxy configurations.",
     category: "Networking",
@@ -445,7 +445,7 @@ export default (
       {
         name: "Gateway",
         description: "Creates a Gateway API Gateway resource managed by Envoy Gateway, with configurable listeners and TLS.",
-        code: `import { Gateway } from '@r8s/gateway';
+        code: `import { Gateway } from '@r8s/envoy';
 
 export default (
   <Gateway
@@ -468,7 +468,7 @@ export default (
       {
         name: "HTTPRoute",
         description: "Creates an HTTPRoute that attaches to a parent Gateway and routes HTTP traffic to backend services.",
-        code: `import { HTTPRoute } from '@r8s/gateway';
+        code: `import { HTTPRoute } from '@r8s/envoy';
 
 export default (
   <HTTPRoute
@@ -495,7 +495,7 @@ export default (
       {
         name: "EnvoyProxy",
         description: "Configures the EnvoyProxy resource that controls the data plane (service type, node ports, multi-Gateway merging).",
-        code: `import { EnvoyProxy } from '@r8s/gateway';
+        code: `import { EnvoyProxy } from '@r8s/envoy';
 
 export default (
   <EnvoyProxy
@@ -517,8 +517,8 @@ export default (
     ]
   },
   {
-    slug: "monitoring",
-    name: "@r8s/monitoring",
+    slug: "prometheus",
+    name: "@r8s/prometheus",
     title: "Monitoring",
     description: "Prometheus stack components powered by kube-prometheus-stack. Declares the prometheus operator and provides ServiceMonitors, PrometheusRules, and PodMonitors.",
     category: "Observability",
@@ -537,7 +537,7 @@ export default (
       {
         name: "ServiceMonitor",
         description: "Creates a ServiceMonitor that tells Prometheus to scrape metrics from services matching a label selector.",
-        code: `import { ServiceMonitor } from '@r8s/monitoring';
+        code: `import { ServiceMonitor } from '@r8s/prometheus';
 
 export default (
   <ServiceMonitor
@@ -559,7 +559,7 @@ export default (
       {
         name: "PrometheusRule",
         description: "Creates a PrometheusRule containing alerting groups and rules evaluated by Prometheus.",
-        code: `import { PrometheusRule } from '@r8s/monitoring';
+        code: `import { PrometheusRule } from '@r8s/prometheus';
 
 export default (
   <PrometheusRule
@@ -585,7 +585,7 @@ export default (
       {
         name: "PodMonitor",
         description: "Creates a PodMonitor that tells Prometheus to scrape pod metrics directly without requiring a Service.",
-        code: `import { PodMonitor } from '@r8s/monitoring';
+        code: `import { PodMonitor } from '@r8s/prometheus';
 
 export default (
   <PodMonitor
@@ -653,8 +653,8 @@ export default (
     ]
   },
   {
-    slug: "logging",
-    name: "@r8s/logging",
+    slug: "logging-operator",
+    name: "@r8s/logging-operator",
     title: "Logging",
     description: "Log aggregation components powered by Banzai Cloud's Logging Operator. Declares logging-operator and provisions Logging, Flow, and Output resources.",
     category: "Observability",
@@ -673,7 +673,7 @@ export default (
       {
         name: "Logging",
         description: "Creates the Logging resource that configures Fluentd and Fluent-bit agents with optional resource limits and control namespace.",
-        code: `import { Logging } from '@r8s/logging';
+        code: `import { Logging } from '@r8s/logging-operator';
 
 export default (
   <Logging
@@ -696,7 +696,7 @@ export default (
       {
         name: "Flow",
         description: "Creates a Flow that selects logs (by label match/exclude), applies filters, and routes them to one or more Output references.",
-        code: `import { Flow } from '@r8s/logging';
+        code: `import { Flow } from '@r8s/logging-operator';
 
 export default (
   <Flow
@@ -720,7 +720,7 @@ export default (
       {
         name: "Output",
         description: "Creates an Output destination (Loki or S3) that Flows can reference.",
-        code: `import { Output } from '@r8s/logging';
+        code: `import { Output } from '@r8s/logging-operator';
 
 export default (
   <Output

@@ -110,10 +110,10 @@ const VALID_OPERATORS = [
   'keycloak',
   'external-dns',
   'redis',
-  'gateway',
-  'monitoring',
+  'envoy',
+  'prometheus',
   'clickhouse',
-  'logging',
+  'logging-operator',
   'loki',
 ];
 

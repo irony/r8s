@@ -49,10 +49,10 @@ metadata:
 | `@r8s/keycloak` | Identity management | keycloak-operator |
 | `@r8s/external-dns` | DNS management | external-dns |
 | `@r8s/redis` | Redis clusters | redis-operator |
-| `@r8s/gateway` | Envoy Gateway (Gateway API) | envoy-gateway |
-| `@r8s/monitoring` | Prometheus stack | kube-prometheus-stack |
+| `@r8s/envoy` | Envoy Gateway (Gateway API) | envoy-gateway |
+| `@r8s/prometheus` | Prometheus stack | kube-prometheus-stack |
 | `@r8s/clickhouse` | ClickHouse database | clickhouse-operator |
-| `@r8s/logging` | Log aggregation (Banzai Cloud) | logging-operator |
+| `@r8s/logging-operator` | Log aggregation (Banzai Cloud) | logging-operator |
 | `@r8s/loki` | Grafana Loki | loki |
 | `@r8s/r8s-controller` | In-cluster TSX rendering controller | — |
 | `@r8s/flux-controller` | FluxCD source controller | — |
@@ -400,11 +400,11 @@ import { certManagerOperator } from '@r8s/cert-manager';
 import { externalDNSOperator } from '@r8s/external-dns';
 import { vaultSecretsOperator } from '@r8s/openbao';
 import { keycloakOperator } from '@r8s/keycloak';
-import { envoyGatewayOperator } from '@r8s/gateway';
+import { envoyGatewayOperator } from '@r8s/envoy';
 import { redisOperator } from '@r8s/redis';
-import { prometheusOperator } from '@r8s/monitoring';
+import { prometheusOperator } from '@r8s/prometheus';
 import { clickhouseOperator } from '@r8s/clickhouse';
-import { loggingOperator } from '@r8s/logging';
+import { loggingOperator } from '@r8s/logging-operator';
 import { lokiOperator } from '@r8s/loki';
 
 cnpgOperator('1.22.5');          // PostgreSQL operator
@@ -591,12 +591,12 @@ import { ClickHouseCluster } from '@r8s/clickhouse';
 
 ### Networking & Routing
 
-#### `<Gateway />` (`@r8s/gateway`)
+#### `<Gateway />` (`@r8s/envoy`)
 
 Creates: Gateway API Gateway resource with HTTPS listeners.
 
 ```tsx
-import { Gateway } from '@r8s/gateway';
+import { Gateway } from '@r8s/envoy';
 
 <Gateway
   name="public-gateway"
@@ -609,12 +609,12 @@ import { Gateway } from '@r8s/gateway';
 
 **Automatically declares:** `envoy-gateway`
 
-#### `<HTTPRoute />` (`@r8s/gateway`)
+#### `<HTTPRoute />` (`@r8s/envoy`)
 
 Creates: Gateway API HTTPRoute for routing traffic to backends with path/header matches.
 
 ```tsx
-import { HTTPRoute } from '@r8s/gateway';
+import { HTTPRoute } from '@r8s/envoy';
 
 <HTTPRoute
   name="api-route"
@@ -725,12 +725,12 @@ import { KeycloakRealm } from '@r8s/keycloak';
 
 ### Observability
 
-#### `<ServiceMonitor />` (`@r8s/monitoring`)
+#### `<ServiceMonitor />` (`@r8s/prometheus`)
 
 Creates: Prometheus ServiceMonitor for scraping service metrics.
 
 ```tsx
-import { ServiceMonitor } from '@r8s/monitoring';
+import { ServiceMonitor } from '@r8s/prometheus';
 
 <ServiceMonitor
   name="api-metrics"
@@ -741,12 +741,12 @@ import { ServiceMonitor } from '@r8s/monitoring';
 
 **Automatically declares:** `prometheus` (kube-prometheus-stack)
 
-#### `<Logging />` (`@r8s/logging`)
+#### `<Logging />` (`@r8s/logging-operator`)
 
 Creates: Banzai Cloud Logging stack. Compose with `<Flow />` and `<Output />` to route logs.
 
 ```tsx
-import { Logging } from '@r8s/logging';
+import { Logging } from '@r8s/logging-operator';
 
 <Logging
   name="platform-logs"
@@ -1137,12 +1137,12 @@ r8s/
 │   ├── core/               # JSX factory, renderer, context, validation
 │   ├── external-dns/       # DNS management components
 │   ├── flux-controller/    # FluxCD source controller for in-cluster rendering
-│   ├── gateway/            # Envoy Gateway (Gateway API) components
+│   ├── envoy/             # Envoy Gateway (Gateway API) components
 │   ├── k8s-types/          # TypeScript interfaces + shared routing abstractions
 │   ├── keycloak/           # Identity management components
-│   ├── logging/            # Logging Operator components
+│   ├── logging-operator/   # Banzai Cloud Logging Operator components
 │   ├── loki/               # Grafana Loki components
-│   ├── monitoring/         # Prometheus stack components
+│   ├── prometheus/        # Prometheus stack components
 │   ├── openbao/            # Secret management components
 │   ├── r8s-controller/     # In-cluster TSX rendering controller
 │   ├── recipes/            # Pre-built components (Database, Ingress, App)
@@ -1222,7 +1222,7 @@ export function MyComponent(props: { name: string; replicas?: number }) {
 4. Add tests in `__tests__/`
 5. Open a PR — we review within 24 hours
 
-See existing packages (`packages/recipes`, `packages/redis`, `packages/monitoring`) for patterns and conventions.
+See existing packages (`packages/recipes`, `packages/redis`, `packages/prometheus`) for patterns and conventions.
 
 ## License
 

@@ -1,7 +1,7 @@
 {
-  "name": "@r8s/gateway",
+  "name": "@r8s/logging-operator",
   "version": "0.1.0",
-  "description": "r8s recipes for Envoy Gateway (Gateway API)",
+  "description": "r8s recipes for Logging Operator (Kube-logging)",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {

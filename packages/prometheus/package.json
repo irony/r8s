@@ -1,7 +1,7 @@
 {
-  "name": "@r8s/logging",
+  "name": "@r8s/prometheus",
   "version": "0.1.0",
-  "description": "r8s recipes for Logging Operator (Kube-logging)",
+  "description": "r8s recipes for Prometheus monitoring stack",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {

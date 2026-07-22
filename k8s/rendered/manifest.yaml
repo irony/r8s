@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r8s-docs
+  namespace: r8s-docs
+  labels:
+    app: r8s-docs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: r8s-docs
+  template:
+    metadata:
+      labels:
+        app: r8s-docs
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/irony/r8s-docs:latest
+          ports:
+            - containerPort: 3000
+          env: []
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: r8s-docs
+  namespace: r8s-docs
+spec:
+  type: ClusterIP
+  selector:
+    app: r8s-docs
+  ports:
+    - port: 80
+      targetPort: 3000
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: r8s-docs-tls
+  namespace: r8s-docs
+spec:
+  secretName: r8s-docs-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - r8s.berget.ai
+  duration: 2160h
+  renewBefore: 360h
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: r8s-docs-gateway
+  namespace: r8s-docs
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: r8s.berget.ai
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: r8s-docs-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: r8s-docs-route
+  namespace: r8s-docs
+spec:
+  parentRefs:
+    - name: r8s-docs-gateway
+  hostnames:
+    - r8s.berget.ai
+  rules:
+    - backendRefs:
+        - name: r8s-docs
+          port: 80
