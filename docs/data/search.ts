@@ -2,7 +2,7 @@ export interface SearchEntry {
   title: string;
   description: string;
   href: string;
-  category: 'Pages' | 'Recipes' | 'Components' | 'Operators';
+  category: 'Pages' | 'Recipes' | 'Components' | 'Operators' | 'Packages';
   keywords?: string[];
 }
 
@@ -34,6 +34,13 @@ export const searchEntries: SearchEntry[] = [
     href: '/operators',
     category: 'Pages',
     keywords: ['operators', 'dependencies', 'helm', 'declareOperator', 'OperatorContext'],
+  },
+  {
+    title: 'Packages',
+    description: 'Browse all operator-backed infrastructure packages — cert-manager, OpenBao, Keycloak, ExternalDNS, Redis, Gateway, Monitoring, ClickHouse, Logging, Loki.',
+    href: '/packages',
+    category: 'Pages',
+    keywords: ['packages', 'list', 'browse', 'operators', 'components'],
   },
   {
     title: 'Deployment',
@@ -116,71 +123,71 @@ export const searchEntries: SearchEntry[] = [
   {
     title: '@r8s/cert-manager',
     description: 'TLS certificate components. Declares the cert-manager operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/cert-manager',
+    category: 'Packages',
     keywords: ['cert-manager', 'certmanager', 'tls', 'certificate', 'letsencrypt', 'package', 'components'],
   },
   {
     title: '@r8s/openbao',
     description: 'Secret management components powered by OpenBao. Declares vault-secrets-operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/openbao',
+    category: 'Packages',
     keywords: ['openbao', 'vault', 'openbao', 'secret management', 'vault-secrets-operator', 'package'],
   },
   {
     title: '@r8s/keycloak',
     description: 'Identity management components. Declares the keycloak-operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/keycloak',
+    category: 'Packages',
     keywords: ['keycloak', 'identity', 'sso', 'saml', 'oidc', 'oauth', 'package', 'components'],
   },
   {
     title: '@r8s/external-dns',
     description: 'DNS management components. Declares the external-dns operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/external-dns',
+    category: 'Packages',
     keywords: ['external-dns', 'external dns', 'dns', 'route53', 'cloudflare', 'package', 'components'],
   },
   {
     title: '@r8s/redis',
     description: 'Redis cluster components. Declares the redis-operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/redis',
+    category: 'Packages',
     keywords: ['redis', 'cache', 'redis-operator', 'package', 'components'],
   },
   {
     title: '@r8s/gateway',
     description: 'Envoy Gateway (Gateway API) components. Declares envoy-gateway.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/gateway',
+    category: 'Packages',
     keywords: ['gateway', 'envoy', 'envoy-gateway', 'gateway api', 'ingress', 'package', 'components'],
   },
   {
     title: '@r8s/monitoring',
     description: 'Prometheus stack components. Declares kube-prometheus-stack.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/monitoring',
+    category: 'Packages',
     keywords: ['monitoring', 'prometheus', 'grafana', 'alertmanager', 'observability', 'package', 'components'],
   },
   {
     title: '@r8s/clickhouse',
     description: 'ClickHouse database components. Declares clickhouse-operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/clickhouse',
+    category: 'Packages',
     keywords: ['clickhouse', 'olap', 'analytics database', 'clickhouse-operator', 'package', 'components'],
   },
   {
     title: '@r8s/logging',
     description: 'Log aggregation components (Banzai Cloud). Declares logging-operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/logging',
+    category: 'Packages',
     keywords: ['logging', 'logs', 'fluentd', 'fluentbit', 'banzai', 'logging-operator', 'package', 'components'],
   },
   {
     title: '@r8s/loki',
     description: 'Grafana Loki components for log storage. Declares the loki operator.',
-    href: '/operators',
-    category: 'Components',
+    href: '/packages/loki',
+    category: 'Packages',
     keywords: ['loki', 'grafana loki', 'log storage', 'logs', 'package', 'components'],
   },
   {
