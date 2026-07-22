@@ -178,7 +178,7 @@ export const SecretContext = createContext<SecretProvider | null>(null);
  *   certManagerOperator('1.14.0'),
  * ]}>
  *   <Database name="app-db" storage="10Gi" />
- *   <App name="myapp" domain="myapp.example.com" tls />
+ *   <App name="myapp" host="myapp.example.com" tls={{ secretName: "myapp-tls", clusterIssuer: "letsencrypt" }} />
  * </OperatorContext.Provider>
  * ```
  */

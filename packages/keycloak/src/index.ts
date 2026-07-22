@@ -50,17 +50,18 @@ export function KeycloakInstance(props: KeycloakInstanceProps) {
   // Auto-wire from DatabaseContext if available
   const dbContext = useContext(DatabaseContext);
   const dbHost = explicitDbHost ?? dbContext?.host;
+  const dbPasswordSecretRef = dbContext?.passwordSecret;
   const dbUsernameSecret =
     explicitUsernameSecret ??
-    (dbContext && {
-      name: dbContext.passwordSecret.name,
+    (dbContext && dbPasswordSecretRef && {
+      name: dbPasswordSecretRef.name,
       key: 'username',
     });
   const dbPasswordSecret =
     explicitPasswordSecret ??
-    (dbContext && {
-      name: dbContext.passwordSecret.name,
-      key: dbContext.passwordKey || 'password',
+    (dbContext && dbPasswordSecretRef && {
+      name: dbPasswordSecretRef.name,
+      key: dbContext.passwordKey || dbPasswordSecretRef.key || 'password',
     });
 
   const keycloak: Keycloak = {

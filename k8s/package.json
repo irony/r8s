@@ -2,8 +2,8 @@
   "name": "r8s-infrastructure",
   "private": true,
   "dependencies": {
-    "@r8s/core": "file:../packages/core",
-    "@r8s/recipes": "file:../packages/recipes",
-    "@r8s/cert-manager": "file:../packages/cert-manager"
+    "@r8s/core": "*",
+    "@r8s/recipes": "*",
+    "@r8s/cert-manager": "*"
   }
 }

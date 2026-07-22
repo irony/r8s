@@ -81,7 +81,6 @@ export function WebService(props: WebServiceProps) {
   } = props;
 
   const envVars: EnvVar[] = [];
-  const envFrom: Array<{ secretRef: { name: string } }> = [];
   const vaultResources: ReturnType<typeof jsx>[] = [];
 
   // Plain env vars
@@ -195,7 +194,6 @@ export function WebService(props: WebServiceProps) {
               image,
               ports: [{ containerPort: port }],
               env: envVars,
-              ...(envFrom.length > 0 && { envFrom }),
               ...(resources && { resources }),
               livenessProbe: {
                 httpGet: { path: '/health', port },

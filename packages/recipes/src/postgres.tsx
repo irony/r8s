@@ -1,5 +1,7 @@
-import { jsx } from '@r8s/core';
+import { jsx, declareOperator, useContext } from '@r8s/core';
 import { Cluster, Pooler, ScheduledBackup } from '@r8s/k8s-types';
+import { OperatorContext } from '@r8s/core/defaults';
+import { cnpgOperator } from './operators';
 
 export interface PostgresProps {
   name: string;
@@ -56,6 +58,10 @@ export function Postgres(props: PostgresProps) {
   // Use provided secret name or generate one
   const secretName = passwordSecretName || `${name}-credentials`;
 
+  // Declare CNPG operator if not already provided via context
+  const sharedOperators = useContext(OperatorContext);
+  const hasCNPG = sharedOperators.some((op) => op.name === 'cnpg');
+
   const cluster: Cluster = {
     apiVersion: 'postgresql.cnpg.io/v1',
     kind: 'Cluster',
@@ -107,7 +113,14 @@ export function Postgres(props: PostgresProps) {
     },
   };
 
-  const outputResources: ReturnType<typeof jsx>[] = [jsx('Cluster', cluster)];
+  const outputResources: ReturnType<typeof jsx>[] = [];
+
+  // Declare CNPG operator if not already provided via context
+  if (!hasCNPG) {
+    outputResources.push(declareOperator(cnpgOperator()));
+  }
+
+  outputResources.push(jsx('Cluster', cluster));
 
   // Add Secret if password is provided directly
   if (password && !passwordSecretName) {
