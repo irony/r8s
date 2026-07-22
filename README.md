@@ -421,11 +421,13 @@ loggingOperator('4.2.3');        // Log aggregation
 lokiOperator('5.47.0');          // Grafana Loki
 ```
 
-## Recipes
+## Packages & Components
 
-Pre-built components for common infrastructure:
+Pre-built components for common infrastructure. Each component declares its operator dependencies automatically (unless provided via `OperatorContext`).
 
-### `<Database />`
+### Core Recipes (`@r8s/recipes`)
+
+#### `<Database />`
 
 Creates: CloudNativePG Cluster (3-instance HA)
 
@@ -441,7 +443,60 @@ import { Database } from '@r8s/recipes';
 
 **Automatically declares:** `cnpg` operator
 
-### `<Ingress />`
+#### `<Cluster />`
+
+Creates: Shared PostgreSQL cluster for multiple databases. Wrap `<Database />` children to share one CNPG cluster.
+
+```tsx
+import { Cluster, Database } from '@r8s/recipes';
+
+<Cluster name="main" storage="100Gi">
+  <Database name="user-db" />
+  <Database name="order-db" />
+</Cluster>
+```
+
+**Automatically declares:** `cnpg` operator
+
+#### `<Postgres />`
+
+Creates: Advanced CNPG cluster with optional Pooler and ScheduledBackup. Useful when you need connection pooling or scheduled backups.
+
+```tsx
+import { Postgres } from '@r8s/recipes';
+
+<Postgres
+  name="analytics-db"
+  storage="50Gi"
+  instances={3}
+  enablePooler
+  enableBackup
+  backupSchedule="0 2 * * *"
+/>
+```
+
+**Automatically declares:** `cnpg` operator
+
+#### `<WebService />`
+
+Creates: Deployment + Service with health checks, plain/Vault/Secret env wiring, and auto DATABASE_URL when composed inside a database context.
+
+```tsx
+import { WebService } from '@r8s/recipes';
+
+<WebService
+  name="api"
+  image="myapp/api:v1"
+  port={3000}
+  replicas={2}
+  env={{ LOG_LEVEL: 'info' }}
+  secrets={{ DATABASE_URL: 'app-secrets' }}
+/>
+```
+
+**Automatically declares:** `vault-secrets-operator` (when `vault` props are used)
+
+#### `<Ingress />`
 
 Creates: Ingress with nginx + cert-manager defaults
 
@@ -462,7 +517,7 @@ import { Ingress } from '@r8s/recipes';
 
 **Automatically declares:** `nginx-ingress` operator, `cert-manager` operator (when TLS enabled)
 
-### `<App />`
+#### `<App />`
 
 Creates: WebService (Deployment + Service) + Ingress. Compose with `<Database />` for a full stack.
 
@@ -498,6 +553,226 @@ import { App, Database } from '@r8s/recipes';
 **Automatically declares:** `nginx-ingress`, `cert-manager` operators (the latter only when TLS is enabled).
 
 > **Note:** `cnpg` is declared automatically when a `<Database />` component is composed inside or alongside `<App />`, not by `<App />` itself.
+
+### Databases
+
+#### `<RedisCluster />` (`@r8s/redis`)
+
+Creates: Redis Cluster (OT-Container-Kit) with configurable cluster size and persistence.
+
+```tsx
+import { RedisCluster } from '@r8s/redis';
+
+<RedisCluster
+  name="cache"
+  namespace="production"
+  clusterSize={3}
+  storage="10Gi"
+/>
+```
+
+**Automatically declares:** `redis-operator`
+
+#### `<ClickHouseCluster />` (`@r8s/clickhouse`)
+
+Creates: ClickHouseInstallation with sharding/replication layout, users, and profiles.
+
+```tsx
+import { ClickHouseCluster } from '@r8s/clickhouse';
+
+<ClickHouseCluster
+  name="analytics"
+  namespace="production"
+  cluster={{ layout: { shardsCount: 2, replicasCount: 2 } }}
+/>
+```
+
+**Automatically declares:** `clickhouse-operator`
+
+### Networking & Routing
+
+#### `<Gateway />` (`@r8s/gateway`)
+
+Creates: Gateway API Gateway resource with HTTPS listeners.
+
+```tsx
+import { Gateway } from '@r8s/gateway';
+
+<Gateway
+  name="public-gateway"
+  gatewayClassName="eg"
+  listeners={[
+    { name: 'https', protocol: 'HTTPS', port: 443, hostname: 'api.example.com' },
+  ]}
+/>
+```
+
+**Automatically declares:** `envoy-gateway`
+
+#### `<HTTPRoute />` (`@r8s/gateway`)
+
+Creates: Gateway API HTTPRoute for routing traffic to backends with path/header matches.
+
+```tsx
+import { HTTPRoute } from '@r8s/gateway';
+
+<HTTPRoute
+  name="api-route"
+  parentRefs={[{ name: 'public-gateway' }]}
+  hostnames={['api.example.com']}
+  rules={[{ backendRefs: [{ name: 'api', port: 80 }] }]}
+/>
+```
+
+#### `<ExternalDNSRecord />` (`@r8s/external-dns`)
+
+Creates: DNSEndpoint CRD for external-dns. Use `externalDNSAnnotations()` to annotate ingresses.
+
+```tsx
+import { ExternalDNSRecord } from '@r8s/external-dns';
+
+<ExternalDNSRecord
+  name="api-dns"
+  dnsName="api.example.com"
+  targets={['1.2.3.4']}
+  recordType="A"
+  ttl={300}
+/>
+```
+
+### Security & Identity
+
+#### `<ManagedCertificate />` (`@r8s/cert-manager`)
+
+Creates: cert-manager Certificate for automated TLS issuance and renewal.
+
+```tsx
+import { ManagedCertificate } from '@r8s/cert-manager';
+
+<ManagedCertificate
+  name="api-cert"
+  secretName="api-tls"
+  issuerName="letsencrypt"
+  dnsNames={['api.example.com']}
+/>
+```
+
+#### `<LetsEncryptIssuer />` (`@r8s/cert-manager`)
+
+Creates: Let's Encrypt ClusterIssuer (HTTP-01 via nginx by default, staging or production server).
+
+```tsx
+import { LetsEncryptIssuer } from '@r8s/cert-manager';
+
+<LetsEncryptIssuer
+  name="letsencrypt"
+  email="admin@example.com"
+  server="production"
+/>
+```
+
+#### `<VaultKVSecret />` (`@r8s/openbao`)
+
+Creates: VaultStaticSecret CRD, projecting a Vault KV path to a Kubernetes Secret.
+
+```tsx
+import { VaultKVSecret } from '@r8s/openbao';
+
+<VaultKVSecret
+  name="db-creds"
+  namespace="production"
+  vaultAuthRef="default"
+  mount="kv"
+  path="db/credentials"
+  secretName="db-creds"
+/>
+```
+
+**Automatically declares:** `vault-secrets-operator`
+
+#### `<KeycloakInstance />` (`@r8s/keycloak`)
+
+Creates: Keycloak CR (k8s.keycloak.org/v2alpha1). Auto-wires database when nested in a `<Database />` or via explicit `dbHost`.
+
+```tsx
+import { KeycloakInstance } from '@r8s/keycloak';
+
+<KeycloakInstance
+  name="keycloak"
+  hostname="auth.example.com"
+  instances={2}
+  tlsSecretName="keycloak-tls"
+/>
+```
+
+**Automatically declares:** `keycloak-operator` (via OLM)
+
+#### `<KeycloakRealm />` (`@r8s/keycloak`)
+
+Creates: KeycloakRealmImport CR for seeding clients and users into a realm.
+
+```tsx
+import { KeycloakRealm } from '@r8s/keycloak';
+
+<KeycloakRealm
+  name="my-realm"
+  namespace="production"
+  keycloakName="keycloak"
+  realmName="my-app"
+  clients={[{ clientId: 'web', redirectUris: ['https://app.example.com/*'] }]}
+/>
+```
+
+### Observability
+
+#### `<ServiceMonitor />` (`@r8s/monitoring`)
+
+Creates: Prometheus ServiceMonitor for scraping service metrics.
+
+```tsx
+import { ServiceMonitor } from '@r8s/monitoring';
+
+<ServiceMonitor
+  name="api-metrics"
+  selector={{ matchLabels: { app: 'api' } }}
+  endpoints={[{ port: 'metrics', path: '/metrics' }]}
+/>
+```
+
+**Automatically declares:** `prometheus` (kube-prometheus-stack)
+
+#### `<Logging />` (`@r8s/logging`)
+
+Creates: Banzai Cloud Logging stack. Compose with `<Flow />` and `<Output />` to route logs.
+
+```tsx
+import { Logging } from '@r8s/logging';
+
+<Logging
+  name="platform-logs"
+  namespace="logging"
+  fluentd={{ replicas: 2 }}
+/>
+```
+
+**Automatically declares:** `logging-operator`
+
+#### `<LokiStack />` (`@r8s/loki`)
+
+Creates: Grafana Loki stack with S3/GCS/filesystem storage and retention limits.
+
+```tsx
+import { LokiStack } from '@r8s/loki';
+
+<LokiStack
+  name="loki"
+  namespace="loki"
+  storage={{ type: 's3', bucket: 'my-loki-bucket', region: 'eu-north-1' }}
+  limits={{ retention: { period: '30d' } }}
+/>
+```
+
+**Automatically declares:** `loki`
 
 ## How It Works
 
